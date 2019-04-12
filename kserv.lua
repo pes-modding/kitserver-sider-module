@@ -19,7 +19,16 @@ local home_next_gk_kit
 local away_next_gk_kit
 
 local is_gk_mode = false
-local modes = { "PLAYERS", "KEEPERS" }
+local modes = { "PLAYERS", "GOALKEEPERS" }
+
+local home_loaded_for = {}
+local home_gk_loaded_for = {}
+local config_editor_on
+
+-- edit mode
+local _team_id
+local _kit_id
+local _is_gk
 
 -- final selections
 local p_home
@@ -88,6 +97,45 @@ local function table_copy(t)
     end
     return new_t
 end
+
+-- kit config editor part ...
+local configEd_settings = {}
+local PREV_PROP_KEY = 0x21
+local NEXT_PROP_KEY = 0x22
+local PREV_VALUE_KEY = 0xbd
+local NEXT_VALUE_KEY = 0xbb
+local overlay_curr = 1
+local overlay_states = {
+    { ui = "Chest number size: %d", prop = "ChestNumberSize", decr = -1, incr = 1, min = 0, max = 31 },
+    { ui = "Chest number x: %d", prop = "ChestNumberX", decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Chest number y: %d", prop = "ChestNumberY", decr = -1, incr = 1, min = 0, max = 7  },
+    { ui = "Back number size: %d", prop = "BackNumberSize", decr = -1, incr = 1, min = 0, max = 15 },
+    { ui = "Back number y: %d", prop = "BackNumberY", decr = -1, incr = 1, min = 0, max = 31  },
+}
+local ui_lines = {}
+
+local function tableLength(T)
+    local count = 0
+    for _ in pairs(T) do
+        count = count + 1
+    end
+    return count
+end
+
+local function get_home_kit_ord_for(kit_id, is_gk)
+    local ord = is_gk and home_gk_loaded_for[kit_id] or home_loaded_for[kit_id]
+    local kits = is_gk and home_kits or home_gk_kits
+    return ord or (kits and kits[kit_id+1] and kit_id+1)
+end
+
+local function is_edit_mode(ctx)
+    -- sorta works now, but probably needs to be more robust
+    local home_team_id = ctx.kits.get_current_team(0)
+    local away_team_id = ctx.kits.get_current_team(1)
+    return home_team_id ~= 65535 and away_team_id == 65535
+end
+
+-- end kit config editor part ...
 
 local function load_map(filename)
     local map = {}
@@ -269,8 +317,28 @@ local function update_gk_kit_config(team_id, kit_ord, kit_path, cfg)
     config_update_filenames(team_id, kit_ord, kit_path, cfg, ks_gk_formats)
 end
 
+-- kit config editor part ...
+local function KitConfigEditor_get_settings(team_id, kit_path, kit_info)
+    log(string.format("Into KitConfigEditor_get_settings (%s, %s, %s) ... ", team_id, kit_path, kit_info))
+    if kit_path then
+        configEd_settings[team_id] = configEd_settings[team_id] or {}
+		configEd_settings[team_id][kit_path] = {}
+		for name, value in pairs(kit_info) do
+			if name and value then
+				value = tonumber(value) or value
+				configEd_settings[team_id][kit_path][name] = value
+			end
+		end
+		log(string.format("... loaded kit config editor state: %s", t2s(configEd_settings[team_id][kit_path])))
+	end
+end
+-- end kit config editor part ...
+
 function m.set_kits(ctx, home_info, away_info)
+    home_loaded_for = {}
+    home_gk_loaded_for = {}
     is_gk_mode = false -- always start in Players mode
+
     log(string.format("home_info (team=%d): %s", ctx.home_team, t2s(home_info)))
     log(string.format("away_info (team=%d): %s", ctx.away_team, t2s(away_info)))
 
@@ -364,12 +432,65 @@ function m.get_filepath(ctx, filename, key)
     end
 end
 
+function m.key_up(ctx, vkey)
+    if config_editor_on and (vkey == PREV_VALUE_KEY or vkey == NEXT_VALUE_KEY) then
+        local s = overlay_states[overlay_curr]
+        local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
+        local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
+        if kit_ord then
+            local kits = is_gk and home_gk_kits or home_kits
+            local update = is_gk and update_gk_kit_config or update_kit_config
+            local curr = kits[kit_ord]
+            local team_id = ctx.kits.get_current_team(0)
+            if team_id then
+                local cfg = table_copy(configEd_settings[team_id][curr[1]])
+                update(team_id, kit_ord, curr[1], cfg)
+                kits[kit_ord] = {curr[1], cfg} -- update internal kserv kits list too ...
+                -- trigger refresh
+                if is_edit_mode(ctx) and is_gk then
+                    ctx.kits.set_gk(team_id, cfg)
+                else
+                    ctx.kits.set(team_id, kit_id, cfg)
+                end
+                ctx.kits.refresh(0)
+            end
+        end
+    end
+end
+
 function m.key_down(ctx, vkey)
     if vkey == 0x30 then
         kmap = load_map(kroot .. "\\map.txt")
         log("Reloaded map from: " .. kroot .. "\\map.txt")
 
-    elseif vkey == 0x39 then -- player/goalkeeper mode toggle
+    elseif vkey == 0x32 then
+        if is_edit_mode(ctx) then
+            config_editor_on = not config_editor_on
+            if config_editor_on then
+                local team_id = ctx.kits.get_current_team(0)
+                if team_id then
+                    home_kits, home_gk_kits = load_configs_for_team(team_id)
+                    home_next_kit = home_kits and #home_kits>0 and 0 or nil
+                    home_next_gk_kit = home_gk_kits and #home_gk_kits>0 and 0 or nil
+
+                    local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
+                    log(string.format("kit_id=%d, is_gk=%s", kit_id, is_gk))
+                    local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
+                    local kits = is_gk and home_gk_kits or home_kits
+                    local update = is_gk and update_gk_kit_config or update_kit_config
+                    if kit_ord then
+                        local curr = kits[kit_ord]
+                        local cfg = table_copy(curr[2])
+                        update(ctx.home_team, kit_ord, curr[1], cfg)
+                        -- kit config editor part ...
+                        KitConfigEditor_get_settings(team_id, curr[1], cfg) -- get current kit data for configEd overlay
+                        -- end kit config editor part ...
+                    end
+                end
+            end
+        end
+
+    elseif not is_edit_mode(ctx) and vkey == 0x39 then -- player/goalkeeper mode toggle
         if is_gk_mode then
             -- try to switch to players mode
             g_home = home_kits and home_gk_kits[home_next_gk_kit]
@@ -436,7 +557,7 @@ function m.key_down(ctx, vkey)
         if not home_kits or not home_gk_kits then
             prep_home_team(ctx)
         end
-        if not is_gk_mode then
+        if not is_gk_mode and not(is_edit_mode(ctx) and _is_gk) then
             -- players
             if home_kits and #home_kits > 0 then
                 -- advance the iter
@@ -448,6 +569,7 @@ function m.key_down(ctx, vkey)
                 update_kit_config(ctx.home_team, home_next_kit, curr[1], cfg)
                 -- trigger refresh
                 local kit_id = ctx.kits.get_current_kit_id(0)
+                home_loaded_for[kit_id] = home_next_kit
                 ctx.kits.set(ctx.home_team, kit_id, cfg, 0)
                 ctx.kits.refresh(0)
                 p_home = curr
@@ -463,13 +585,21 @@ function m.key_down(ctx, vkey)
                 local cfg = table_copy(curr[2])
                 update_gk_kit_config(ctx.home_team, home_next_gk_kit, curr[1], cfg)
                 -- trigger refresh
-                local kit_id = ctx.kits.get_current_kit_id(0)
-                ctx.kits.set(ctx.home_team, kit_id, cfg)
+                local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
+                log(string.format("is_edit_mode=%s, is_gk=%s", is_edit_mode(ctx), is_gk))
+                home_gk_loaded_for[0] = home_next_gk_kit
+                if is_edit_mode(ctx) and is_gk then
+                    -- in edit mode, we need to modify the actual GK block
+                    log(string.format("calling set_gk(%s, %s)", ctx.home_team, t2s(cfg)))
+                    ctx.kits.set_gk(ctx.home_team, cfg)
+                else
+                    ctx.kits.set(ctx.home_team, kit_id, cfg)
+                end
                 ctx.kits.refresh(0)
                 g_home = curr
             end
         end
-    elseif vkey == 0x37 then -- next away kit
+    elseif not is_edit_mode(ctx) and vkey == 0x37 then -- next away kit
         if not away_kits or not away_gk_kits then
             prep_away_team(ctx)
         end
@@ -504,6 +634,58 @@ function m.key_down(ctx, vkey)
                 ctx.kits.set(ctx.away_team, kit_id, cfg)
                 ctx.kits.refresh(1)
                 g_away = curr
+            end
+        end
+
+	-- kit config editor part ...
+    elseif config_editor_on and vkey == NEXT_PROP_KEY then
+        if overlay_curr < #overlay_states then
+            overlay_curr = overlay_curr + 1
+        end
+    elseif config_editor_on and vkey == PREV_PROP_KEY then
+        if overlay_curr > 1 then
+            overlay_curr = overlay_curr - 1
+        end
+
+    elseif config_editor_on and vkey == NEXT_VALUE_KEY then
+        local s = overlay_states[overlay_curr]
+        local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
+        local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
+        local kits = is_gk and home_gk_kits or home_kits
+        local update = is_gk and update_gk_kit_config or update_kit_config
+        if kit_ord then
+            local curr = kits[kit_ord]
+            log(string.format("curr: %s, %s", curr[1], t2s(curr[2])))
+            local team_id = ctx.kits.get_current_team(0)
+            if s.incr ~= nil and team_id then
+                configEd_settings[team_id][curr[1]][s.prop] = math.min(configEd_settings[team_id][curr[1]][s.prop] + s.incr, s.max)
+                local cfg = table_copy(configEd_settings[team_id][curr[1]])
+                update(team_id, kit_ord, curr[1], cfg)
+            elseif s.nextf ~= nil and team_id then
+                configEd_settings[team_id][curr[1]][s.prop] = s.nextf(configEd_settings[team_id][curr[1]][s.prop])
+                local cfg = table_copy(configEd_settings[team_id][curr[1]])
+                update(team_id, kit_ord, curr[1], cfg)
+            end
+        end
+
+    elseif config_editor_on and vkey == PREV_VALUE_KEY then
+        local s = overlay_states[overlay_curr]
+        local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
+        local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
+        local kits = is_gk and home_gk_kits or home_kits
+        local update = is_gk and update_gk_kit_config or update_kit_config
+        if kit_ord then
+            local curr = kits[kit_ord]
+            log(string.format("curr: %s, %s", curr[1], t2s(curr[2])))
+            local team_id = ctx.kits.get_current_team(0)
+            if s.decr ~= nil and team_id then
+                configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
+                local cfg = table_copy(configEd_settings[team_id][curr[1]])
+                update(team_id, kit_ord, curr[1], cfg)
+            elseif s.prevf ~= nil and team_id then
+                configEd_settings[team_id][curr[1]][s.prop] = s.prevf(configEd_settings[team_id][curr[1]][s.prop])
+                local cfg = table_copy(configEd_settings[team_id][curr[1]])
+                update(team_id, kit_ord, curr[1], cfg)
             end
         end
     end
@@ -546,9 +728,81 @@ function m.finalize_kits(ctx)
     end
 end
 
+-- kit config editor part ...
+local function get_configEd_overlay_states(ctx)
+    if not config_editor_on then
+        return ""
+    end
+    if not is_edit_mode(ctx) then
+        -- does not look to be Edit mode
+        return ""
+    end
+    local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
+    if not kit_id then
+        return ""
+    end
+
+    local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
+    if not kit_ord then
+        -- we don't have a GDB kit to edit
+        return ""
+    end
+
+    local team_id = ctx.kits.get_current_team(0)
+    local kits = is_gk and home_gk_kits or home_kits
+    local update = is_gk and update_gk_kit_config or update_kit_config
+	local curr = kits[kit_ord]
+    if curr and configEd_settings and configEd_settings[team_id] and configEd_settings[team_id][curr[1]]==nil then
+        local cfg = table_copy(curr[2])
+        update(team_id, kit_ord, curr[1], cfg)
+        -- kit config editor part ...
+        KitConfigEditor_get_settings(team_id, curr[1], cfg) -- get current kit data for configEd overlay
+        -- end kit config editor part ...
+    end
+    if curr and curr[1] and configEd_settings and configEd_settings[team_id] and tableLength(configEd_settings[team_id]) > 0
+            and tableLength(configEd_settings[team_id][curr[1]]) > 0 then
+        -- construct ui text
+        for i,v in ipairs(overlay_states) do
+            local s = overlay_states[i]
+            local setting = string.format(s.ui, configEd_settings[team_id][curr[1]][s.prop])
+            if i == overlay_curr then
+                ui_lines[i] = string.format("\n---> %s <---", setting)
+            else
+                ui_lines[i] = string.format("\n     %s", setting)
+            end
+        end
+        return string.format([[
+
+     Kit Config live editor (for now, home team only, chest numbers)
+     Keys: [PgUp][PgDn] - choose setting, [-][+] - modify value
+     %s]], table.concat(ui_lines))
+
+    else
+        -- log("In get_overlay_states: configEd_settings is nul or empty!! ")
+    end
+    return ""
+end
+-- end kit config editor part ...
+
 function m.overlay_on(ctx)
-    return string.format("%s: [6] - switch home kit, [7] - switch away kit, [9] - PL/GK, [0] - reload map",
-        modes[is_gk_mode and 2 or 1])
+    if is_edit_mode(ctx) then
+        _team_id = ctx.kits.get_current_team(0)
+        _kit_id, _is_gk = ctx.kits.get_current_kit_id(0)
+        if not ctx.home_team then
+            ctx.home_team = _team_id
+        elseif _team_id == 65535  then
+            ctx.home_team = nil
+        end
+        return string.format("[2] - Config Editor (%s), [6] - switch kit, [0] - reload map"
+                -- kit config editor part ...
+                .. "\n" ..
+                get_configEd_overlay_states(ctx),
+                -- end kit config editor part ...
+                config_editor_on and "ON" or "OFF")
+    else
+        return string.format("%s | [6][7] - switch kits, [9] - PL/GK, [0] - reload map",
+            modes[is_gk_mode and 2 or 1])
+    end
 end
 
 function m.init(ctx)
@@ -558,6 +812,7 @@ function m.init(ctx)
     kmap = load_map(kroot .. "\\map.txt")
     ctx.register("overlay_on", m.overlay_on)
     ctx.register("key_down", m.key_down)
+    ctx.register("key_up", m.key_up)
     ctx.register("set_kits", m.set_kits)
     ctx.register("after_set_conditions", m.finalize_kits)
     ctx.register("livecpk_make_key", m.make_key)
