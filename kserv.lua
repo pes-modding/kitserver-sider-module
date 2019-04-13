@@ -311,6 +311,7 @@ local function prep_home_team(ctx)
     home_kits, home_gk_kits = load_configs_for_team(ctx.home_team)
     home_next_kit = home_kits and #home_kits>0 and 0 or nil
     home_next_gk_kit = home_gk_kits and #home_gk_kits>0 and 0 or nil
+    log(string.format("prepped home kits for: %s", ctx.home_team))
 end
 
 local function prep_away_team(ctx)
@@ -318,6 +319,7 @@ local function prep_away_team(ctx)
     away_kits, away_gk_kits = load_configs_for_team(ctx.away_team)
     away_next_kit = away_kits and #away_kits>0 and 0 or nil
     away_next_gk_kit = away_gk_kits and #away_gk_kits>0 and 0 or nil
+    log(string.format("prepped away kits for: %s", ctx.away_team))
 end
 
 local function config_update_filenames(team_id, ord, kit_path, kit_cfg, formats)
@@ -394,19 +396,28 @@ local function KitConfigEditor_get_settings(team_id, kit_path, kit_info)
 end
 -- end kit config editor part ...
 
-function m.set_kits(ctx, home_info, away_info)
+local function reset_match(ctx)
     home_loaded_for = {}
     home_gk_loaded_for = {}
+    p_home, p_away = nil, nil
+    g_home, g_away = nil, nil
     is_gk_mode = false -- always start in Players mode
-
-    log(string.format("home_info (team=%d): %s", ctx.home_team, t2s(home_info)))
-    log(string.format("away_info (team=%d): %s", ctx.away_team, t2s(away_info)))
-
-    --dump_kit_config(string.format("%s%d-%s-config.txt", ctx.sider_dir, ctx.home_team, home_info.kit_id), home_info)
-    --dump_kit_config(string.format("%s%d-%s-config.txt", ctx.sider_dir, ctx.away_team, away_info.kit_id), away_info)
 
     prep_home_team(ctx)
     prep_away_team(ctx)
+end
+
+function m.set_teams(ctx, home, away)
+    reset_match(ctx)
+end
+
+function m.set_kits(ctx, home_info, away_info)
+    log(string.format("set_kits: home_info (team=%d): %s", ctx.home_team, t2s(home_info)))
+    log(string.format("set_kits: away_info (team=%d): %s", ctx.away_team, t2s(away_info)))
+    --dump_kit_config(string.format("%s%d-%s-config.txt", ctx.sider_dir, ctx.home_team, home_info.kit_id), home_info)
+    --dump_kit_config(string.format("%s%d-%s-config.txt", ctx.sider_dir, ctx.away_team, away_info.kit_id), away_info)
+
+    reset_match(ctx)
 
     -- load corresponding kits, if available in GDB
     local hi
@@ -770,7 +781,6 @@ function m.finalize_kits(ctx)
             local cfg = table_copy(curr[2])
             update_kit_config(ctx.home_team, home_next_kit, curr[1], cfg)
             ctx.kits.set(ctx.home_team, kit_id, cfg, 0)
-            ctx.kits.refresh(0)
         end
     end
     if away_kits and #away_kits > 0 then
@@ -786,7 +796,6 @@ function m.finalize_kits(ctx)
             local cfg = table_copy(curr[2])
             update_kit_config(ctx.away_team, away_next_kit, curr[1], cfg)
             ctx.kits.set(ctx.away_team, kit_id, cfg, 1)
-            ctx.kits.refresh(1)
         end
     end
 end
@@ -881,6 +890,7 @@ function m.init(ctx)
     ctx.register("overlay_on", m.overlay_on)
     ctx.register("key_down", m.key_down)
     ctx.register("key_up", m.key_up)
+    ctx.register("set_teams", m.set_teams)
     ctx.register("set_kits", m.set_kits)
     ctx.register("after_set_conditions", m.finalize_kits)
     ctx.register("livecpk_make_key", m.make_key)
