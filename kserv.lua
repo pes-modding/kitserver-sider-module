@@ -122,10 +122,27 @@ local function tableLength(T)
     return count
 end
 
+local standard_kits = { "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9" }
+local standard_gk_kits = { "g1" }
+
 local function get_home_kit_ord_for(kit_id, is_gk)
+    if not kit_id then
+        return
+    end
     local ord = is_gk and home_gk_loaded_for[kit_id] or home_loaded_for[kit_id]
-    local kits = is_gk and home_kits or home_gk_kits
+    local kits = is_gk and home_gk_kits or home_kits
     return ord or (kits and kits[kit_id+1] and kit_id+1)
+end
+
+local function get_home_kit_path_for(kit_id, is_gk)
+    if not kit_id then
+        return
+    end
+    local ord = is_gk and home_gk_loaded_for[kit_id] or home_loaded_for[kit_id]
+    local kits = is_gk and home_gk_kits or home_kits
+    local kit_path = kits and kits[ord] and kits[ord][1]
+    kit_path = kit_path or (is_gk and standard_gk_kits[kit_id+1] or standard_kits[kit_id+1])
+    return kit_path
 end
 
 local function is_edit_mode(ctx)
@@ -162,6 +179,8 @@ local function load_config(filename)
         return
     end
     for line in io.lines(filename) do
+        -- strip BOF
+        line = string.gsub(line, "^\xef\xbb\xbf", "")
         -- strip comment
         line = string.gsub(line, ";.*", "")
         key, value = string.match(line, "%s*(%w+)%s*=%s*[\"]?([^\"]*)")
@@ -171,6 +190,48 @@ local function load_config(filename)
         end
     end
     return cfg
+end
+
+local function save_config(filename, t)
+    local f = io.open(filename,"wt")
+    if not f then
+        log(string.format("warning: unable to save kit config to: %s", filename))
+        return
+    end
+    f:write("; Kit config dumped by kserv.lua\n\n")
+    local keys = {}
+    for k,v in pairs(t) do
+        keys[#keys + 1] = k
+    end
+    table.sort(keys)
+    for i,k in ipairs(keys) do
+        f:write(string.format("%s=%s\n", k, t[k]))
+    end
+    f:close()
+    log(string.format("kit config saved to: %s", filename))
+end
+
+local function apply_changes(team_id, ki, cfg, save_to_disk)
+    local excludes = {
+        KitFile=1, KitFile_srm=1, ChestNumbersFile=1,
+        BackNumbersFile=1, LegNumbersFile=1, NameFontFile=1,
+    }
+    for k,v in pairs(cfg) do
+        if not excludes[k] then
+            ki[2][k] = v
+        end
+    end
+    if not save_to_disk then
+        return
+    end
+    -- save
+    local team_path = kmap[team_id]
+    if not team_path then
+        log("warning: no entry for team %d in map.txt. Skipping save")
+        return
+    end
+    local filename = string.format("%s%s\\%s\\config.txt", kroot, team_path, ki[1])
+    save_config(filename, ki[2])
 end
 
 local function load_configs_for_team(team_id)
@@ -187,6 +248,7 @@ local function load_configs_for_team(team_id)
     if f then
         f:close()
         for line in io.lines(kroot .. path .. "\\order.txt") do
+            line = string.gsub(line, "^\xef\xbb\xbf", "")
             line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
             local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
             local cfg = load_config(filename)
@@ -203,6 +265,7 @@ local function load_configs_for_team(team_id)
     if f then
         f:close()
         for line in io.lines(kroot .. path .. "\\gk_order.txt") do
+            line = string.gsub(line, "^\xef\xbb\xbf", "")
             line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
             local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
             local cfg = load_config(filename)
@@ -215,9 +278,6 @@ local function load_configs_for_team(team_id)
     end
     return pt, gt
 end
-
-local standard_kits = { "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9" }
-local standard_gk_kits = { "g1" }
 
 local function get_curr_kit(ctx, team_id, home_or_away)
     local kit_id = ctx.kits.get_current_kit_id(home_or_away)
@@ -445,7 +505,7 @@ function m.key_up(ctx, vkey)
             if team_id then
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
-                kits[kit_ord] = {curr[1], cfg} -- update internal kserv kits list too ...
+                apply_changes(team_id, kits[kit_ord], cfg, true)
                 -- trigger refresh
                 if is_edit_mode(ctx) and is_gk then
                     ctx.kits.set_gk(team_id, cfg)
@@ -468,10 +528,9 @@ function m.key_down(ctx, vkey)
             config_editor_on = not config_editor_on
             if config_editor_on then
                 local team_id = ctx.kits.get_current_team(0)
-                if team_id then
-                    home_kits, home_gk_kits = load_configs_for_team(team_id)
-                    home_next_kit = home_kits and #home_kits>0 and 0 or nil
-                    home_next_gk_kit = home_gk_kits and #home_gk_kits>0 and 0 or nil
+                if team_id and team_id ~= 65535 then
+                    ctx.home_team = team_id
+                    prep_home_team(ctx)
 
                     local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
                     log(string.format("kit_id=%d, is_gk=%s", kit_id, is_gk))
@@ -661,10 +720,12 @@ function m.key_down(ctx, vkey)
                 configEd_settings[team_id][curr[1]][s.prop] = math.min(configEd_settings[team_id][curr[1]][s.prop] + s.incr, s.max)
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
+                apply_changes(team_id, kits[kit_ord], cfg, true)
             elseif s.nextf ~= nil and team_id then
                 configEd_settings[team_id][curr[1]][s.prop] = s.nextf(configEd_settings[team_id][curr[1]][s.prop])
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
+                apply_changes(team_id, kits[kit_ord], cfg, true)
             end
         end
 
@@ -682,10 +743,12 @@ function m.key_down(ctx, vkey)
                 configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
+                apply_changes(team_id, kits[kit_ord], cfg, true)
             elseif s.prevf ~= nil and team_id then
                 configEd_settings[team_id][curr[1]][s.prop] = s.prevf(configEd_settings[team_id][curr[1]][s.prop])
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
+                apply_changes(team_id, kits[kit_ord], cfg, true)
             end
         end
     end
@@ -750,6 +813,10 @@ local function get_configEd_overlay_states(ctx)
 
     local team_id = ctx.kits.get_current_team(0)
     local kits = is_gk and home_gk_kits or home_kits
+    if not kits then
+        return ""
+    end
+
     local update = is_gk and update_gk_kit_config or update_kit_config
 	local curr = kits[kit_ord]
     if curr and configEd_settings and configEd_settings[team_id] and configEd_settings[team_id][curr[1]]==nil then
@@ -788,16 +855,17 @@ function m.overlay_on(ctx)
     if is_edit_mode(ctx) then
         _team_id = ctx.kits.get_current_team(0)
         _kit_id, _is_gk = ctx.kits.get_current_kit_id(0)
-        if not ctx.home_team then
+        if ctx.home_team ~= _team_id then
+            -- team changed: reset
             ctx.home_team = _team_id
-        elseif _team_id == 65535  then
-            ctx.home_team = nil
+            prep_home_team(ctx)
         end
-        return string.format("[2] - Config Editor (%s), [6] - switch kit, [0] - reload map"
+        return string.format("team:%d, kit:%s | [2] - Editor (%s), [6] - switch kit, [0] - reload map"
                 -- kit config editor part ...
                 .. "\n" ..
                 get_configEd_overlay_states(ctx),
                 -- end kit config editor part ...
+                _team_id, get_home_kit_path_for(_kit_id, _is_gk),
                 config_editor_on and "ON" or "OFF")
     else
         return string.format("%s | [6][7] - switch kits, [9] - PL/GK, [0] - reload map",
