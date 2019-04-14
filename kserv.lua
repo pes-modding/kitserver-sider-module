@@ -171,6 +171,7 @@ end
 
 local function load_config(filename)
     local cfg = {}
+    local cfg_org = {}
     local key, value
     local f = io.open(filename)
     if not f then
@@ -181,6 +182,8 @@ local function load_config(filename)
     for line in io.lines(filename) do
         -- strip BOF
         line = string.gsub(line, "^\xef\xbb\xbf", "")
+        -- get comment
+        local comment = string.match(line, ";.*")
         -- strip comment
         line = string.gsub(line, ";.*", "")
         key, value = string.match(line, "%s*(%w+)%s*=%s*[\"]?([^\"]*)")
@@ -188,24 +191,52 @@ local function load_config(filename)
         if key and value then
             cfg[key] = value
         end
+        -- store original structure
+        cfg_org[#cfg_org + 1] = { line, comment, key, value }
     end
-    return cfg
+    return cfg, cfg_org
 end
 
-local function save_config(filename, t)
+local function pad_to_numchars(s, n)
+    if n > #s then
+        return s .. string.rep(" ", n-#s)
+    end
+    return s
+end
+
+local function save_config(filename, cfg, cfg_org)
     local f = io.open(filename,"wt")
     if not f then
         log(string.format("warning: unable to save kit config to: %s", filename))
         return
     end
-    f:write("; Kit config dumped by kserv.lua\n\n")
-    local keys = {}
-    for k,v in pairs(t) do
-        keys[#keys + 1] = k
+    local cfg_dup = table_copy(cfg)
+    for i,li in ipairs(cfg_org) do
+        local line, comment, key, value = li[1],li[2],li[3],li[4]
+        comment = comment or ""
+        if key==nil or value==nil then
+            -- write original line
+            f:write(string.format("%s%s\n", line, comment))
+        else
+            -- write updated value or original
+            local s = string.format("%s=%s", key, cfg_dup[key] or value)
+            s = pad_to_numchars(s, 50)
+            f:write(string.format("%s%s\n", s, comment))
+            cfg_dup[key] = nil
+        end
     end
-    table.sort(keys)
-    for i,k in ipairs(keys) do
-        f:write(string.format("%s=%s\n", k, t[k]))
+    -- write remaining (new) key/value pairs, if any left
+    if tableLength(cfg_dup)>0 then
+        f:write("\n")
+        f:write("; values added by kserv.lua\n")
+        local keys = {}
+        for k,v in pairs(cfg_dup) do
+            keys[#keys + 1] = k
+        end
+        table.sort(keys)
+        for i,k in ipairs(keys) do
+            f:write(string.format("%s=%s\n", k, cfg_dup[k]))
+        end
     end
     f:close()
     log(string.format("kit config saved to: %s", filename))
@@ -231,7 +262,7 @@ local function apply_changes(team_id, ki, cfg, save_to_disk)
         return
     end
     local filename = string.format("%s%s\\%s\\config.txt", kroot, team_path, ki[1])
-    save_config(filename, ki[2])
+    save_config(filename, ki[2], ki[3])
 end
 
 local function load_configs_for_team(team_id)
@@ -251,9 +282,9 @@ local function load_configs_for_team(team_id)
             line = string.gsub(line, "^\xef\xbb\xbf", "")
             line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
             local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-            local cfg = load_config(filename)
+            local cfg, cfg_org = load_config(filename)
             if cfg then
-                pt[#pt + 1] = { line, cfg }
+                pt[#pt + 1] = { line, cfg, cfg_org }
             else
                 log("WARNING: unable to load kit config from: " .. filename)
             end
@@ -268,9 +299,9 @@ local function load_configs_for_team(team_id)
             line = string.gsub(line, "^\xef\xbb\xbf", "")
             line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
             local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-            local cfg = load_config(filename)
+            local cfg, cfg_org = load_config(filename)
             if cfg then
-                gt[#gt + 1] = { line, cfg }
+                gt[#gt + 1] = { line, cfg, cfg_org }
             else
                 log("WARNING: unable to load GK kit config from: " .. filename)
             end
