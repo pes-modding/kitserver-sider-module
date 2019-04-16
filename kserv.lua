@@ -5,6 +5,9 @@ local m = {}
 
 m.version = "1.4"
 
+-- just trying some edit in BitBucket web UI itself
+-- i think it's working
+
 local kroot = ".\\content\\kit-server\\"
 local kmap
 
