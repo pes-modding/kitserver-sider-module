@@ -146,7 +146,7 @@ local function is_edit_mode(ctx)
     -- sorta works now, but probably needs to be more robust
     local home_team_id = ctx.kits.get_current_team(0)
     local away_team_id = ctx.kits.get_current_team(1)
-    return home_team_id ~= 65535 and away_team_id == 65535
+    return home_team_id ~= 0x1ffff and away_team_id == 0x1ffff
 end
 
 -- end kit config editor part ...
@@ -572,7 +572,7 @@ function m.key_down(ctx, vkey)
             config_editor_on = not config_editor_on
             if config_editor_on then
                 local team_id = ctx.kits.get_current_team(0)
-                if team_id and team_id ~= 65535 then
+                if team_id and team_id ~= 0x1ffff then
                     ctx.home_team = team_id
                     prep_home_team(ctx)
 
