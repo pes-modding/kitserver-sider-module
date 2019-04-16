@@ -187,6 +187,9 @@ local function load_config(filename)
         -- strip comment
         line = string.gsub(line, ";.*", "")
         key, value = string.match(line, "%s*(%w+)%s*=%s*[\"]?([^\"]*)")
+        -- strip trailing space from value
+        value = value and string.gsub(value, "%s*$", "") or nil
+        -- convert to number of we can
         value = tonumber(value) or value
         if key and value then
             cfg[key] = value
@@ -220,7 +223,9 @@ local function save_config(filename, cfg, cfg_org)
         else
             -- write updated value or original
             local s = string.format("%s=%s", key, cfg_dup[key] or value)
-            s = pad_to_numchars(s, 50)
+            if comment ~= "" then
+                s = pad_to_numchars(s, 50)
+            end
             f:write(string.format("%s%s\n", s, comment))
             cfg_dup[key] = nil
         end
