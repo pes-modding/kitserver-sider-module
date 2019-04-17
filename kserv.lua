@@ -3,10 +3,7 @@
 
 local m = {}
 
-m.version = "1.4"
-
--- just trying some edit in BitBucket web UI itself
--- i think it's working
+m.version = "1.5"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -39,14 +36,6 @@ local p_away
 local g_home
 local g_away
 
-local patterns = {
-    ["\\(k%d+[pg]%d+)%.ftex$"] = "KitFile",
-    ["\\(k%d+[pg]%d+_srm)%.ftex$"] = "KitFile_srm",
-    ["\\(k%d+[pg]%d+_c)%.ftex$"] = "ChestNumbersFile",
-    ["\\(k%d+[pg]%d+_l)%.ftex$"] = "LegNumbersFile",
-    ["\\(k%d+[pg]%d+_b)%.ftex$"] = "BackNumbersFile",
-    ["\\(k%d+[pg]%d+_n)%.ftex$"] = "NameFontFile",
-}
 local ks_player_formats = {
     KitFile = "k%dp%d",
     KitFile_srm = "k%dp%d_srm",
@@ -376,7 +365,7 @@ local function config_update_filenames(team_id, ord, kit_path, kit_cfg, formats)
                 local fmt = formats[k]
                 if fmt then
                     local fkey = string.format(fmt, team_id, ord)
-                    kfile_remap[fkey] = pathname
+                    kfile_remap[string.format("Asset\\model\\character\\uniform\\texture\\#windx11\\%s.ftex", fkey)] = pathname
                     kit_cfg[k] = fkey
                 end
             end
@@ -514,22 +503,15 @@ end
 
 function m.make_key(ctx, filename)
     --log("wants: " .. filename)
-    for patt,attr in pairs(patterns) do
-        local fkey = string.match(filename, patt)
-        if fkey then
-            local key = kfile_remap[fkey]
-            if key then
-                log(string.format("fkey: {%s}, key: {%s}", fkey, key))
-            end
-            return key
-        end
+    local key = kfile_remap[filename]
+    if key then
+        log(string.format("mapped: {%s} ==> {%s}", filename, key))
+        return key
     end
-    -- no key for this file
-    return ""
 end
 
 function m.get_filepath(ctx, filename, key)
-    if key and key ~= "" then
+    if key then
         return kroot .. key
     end
 end
