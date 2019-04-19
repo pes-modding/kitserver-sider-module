@@ -899,7 +899,7 @@ function m.key_down(ctx, vkey)
 
             -- could this be somehow shortened? easier way to get team_id and curr for the final build_grid_menu(team_id, curr[1]) call?
             local team_id = ctx.kits.get_current_team(0)
-            if team_id and team_id ~= 65535 then
+            if team_id and team_id ~= 0x1ffff then
                 local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
                 local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
                 local kits = is_gk and home_gk_kits or home_kits
@@ -915,7 +915,7 @@ function m.key_down(ctx, vkey)
 
             -- could this be somehow shortened? easier way to get team_id and curr for the final build_grid_menu(team_id, curr[1]) call?
             local team_id = ctx.kits.get_current_team(0)
-            if team_id and team_id ~= 65535 then
+            if team_id and team_id ~= 0x1ffff then
                 local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
                 local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
                 local kits = is_gk and home_gk_kits or home_kits
