@@ -86,7 +86,7 @@ local function table_copy(t)
 end
 
 local function pad_to_numchars(s, n)
-	s = tostring(s)
+    s = tostring(s)
     if n > #s then
         return s .. string.rep(" ", n-#s)
     end
@@ -111,31 +111,31 @@ local function tableInvert(T) -- swaps keys with values
 end
 
 local function rot_left(k, v, cv)
-	for i, val in pairs(table_copy(v)) do
-		if v[1] ~= cv then
-			-- keep rotating to the left, until current value is reached
-			table.insert( v, tableLength(v), table.remove( v, 1 ) )
-		else
-			break
-		end
-	end
-	-- then rotate once more, to reach next value
-	table.insert( v, tableLength(v), table.remove( v, 1 ) )
-	return v[1], k[v[1]]
+    for i, val in pairs(table_copy(v)) do
+        if v[1] ~= cv then
+            -- keep rotating to the left, until current value is reached
+            table.insert( v, tableLength(v), table.remove( v, 1 ) )
+        else
+            break
+        end
+    end
+    -- then rotate once more, to reach next value
+    table.insert( v, tableLength(v), table.remove( v, 1 ) )
+    return v[1], k[v[1]]
 end
 
 local function rot_right(k, v, cv)
-	for i, val in pairs(table_copy(v)) do
-		if v[1] ~= cv then
-			-- keep rotating to the right, until current value is reached
-			table.insert( v, 1, table.remove( v, tableLength(v) ) )
-		else
-			break
-		end
-	end
-	-- then rotate once more, to reach previous value
-	table.insert( v, 1, table.remove( v, tableLength(v) ) )
-	return v[1], k[v[1]]
+    for i, val in pairs(table_copy(v)) do
+        if v[1] ~= cv then
+            -- keep rotating to the right, until current value is reached
+            table.insert( v, 1, table.remove( v, tableLength(v) ) )
+        else
+            break
+        end
+    end
+    -- then rotate once more, to reach previous value
+    table.insert( v, 1, table.remove( v, tableLength(v) ) )
+    return v[1], k[v[1]]
 end
 
 local configEd_settings = {}
@@ -145,65 +145,65 @@ local PREV_VALUE_KEY = 0xbd
 local NEXT_VALUE_KEY = 0xbb
 local overlay_curr = 1
 local overlay_states = {
-	{ ui = "Short sleeves model: %d", prop = "ShortSleevesModel", col = 1, row = 1, decr = -1, incr = 1, min = 1, max = 1  },
-	{ ui = "Shirt model: %s", prop = "ShirtModel", col = 1, row = 2, 
-		vals = {"144", "151=Semi-long", "160", "176=Legacy"}, keys = {["144"] = 144, ["151=Semi-long"] = 151, ["160"] = 160, ["176=Legacy"] = 176},
-		nextf = rot_left,
-		prevf = rot_right,
-	}, 
-	{ ui = "Collar: %d", prop = "Collar", col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 127  },
-	{ ui = "Tight kit: %s", prop = "TightKit", col = 1, row = 4, 
-		vals = {"Off", "On"}, keys = {["Off"] = 0, ["On"] = 1},
-		nextf = rot_left,
-		prevf = rot_right,
-	}, 
-	{ ui = "Shirt pattern: %d", prop = "ShirtPattern", col = 1, row = 5, decr = -1, incr = 1, min = 0, max = 6  },
-	{ ui = "Winter collar: %d", prop = "WinterCollar", col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 127  },
-	{ ui = "Long sleeves: %s", prop = "LongSleevesType", col = 1, row = 7, 
-		vals = {"Normal&U-Shirt", "Only Undershirt"}, keys = {["Normal&U-Shirt"] = 62, ["Only Undershirt"] = 187},
-		nextf = rot_left,
-		prevf = rot_right,
-	}, 
+    { ui = "Short sleeves model: %d", prop = "ShortSleevesModel", col = 1, row = 1, decr = -1, incr = 1, min = 1, max = 1  },
+    { ui = "Shirt model: %s", prop = "ShirtModel", col = 1, row = 2,
+        vals = {"144", "151=Semi-long", "160", "176=Legacy"}, keys = {["144"] = 144, ["151=Semi-long"] = 151, ["160"] = 160, ["176=Legacy"] = 176},
+        nextf = rot_left,
+        prevf = rot_right,
+    },
+    { ui = "Collar: %d", prop = "Collar", col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 127  },
+    { ui = "Tight kit: %s", prop = "TightKit", col = 1, row = 4,
+        vals = {"Off", "On"}, keys = {["Off"] = 0, ["On"] = 1},
+        nextf = rot_left,
+        prevf = rot_right,
+    },
+    { ui = "Shirt pattern: %d", prop = "ShirtPattern", col = 1, row = 5, decr = -1, incr = 1, min = 0, max = 6  },
+    { ui = "Winter collar: %d", prop = "WinterCollar", col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 127  },
+    { ui = "Long sleeves: %s", prop = "LongSleevesType", col = 1, row = 7,
+        vals = {"Normal&U-Shirt", "Only Undershirt"}, keys = {["Normal&U-Shirt"] = 62, ["Only Undershirt"] = 187},
+        nextf = rot_left,
+        prevf = rot_right,
+    },
 
     { ui = "Chest number size: %d", prop = "ChestNumberSize", col = 2, row = 1, decr = -1, incr = 1, min = 0, max = 31 },
     { ui = "Chest number x: %d", prop = "ChestNumberX", col = 2, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
     { ui = "Chest number y: %d", prop = "ChestNumberY", col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 7  },
-    
-	{ ui = "Shorts model: %d", prop = "ShortsModel", col = 3, row = 1, decr = -1, incr = 1, min = 0, max = 17  },
-	{ ui = "Shorts number size: %d", prop = "ShortsNumberSize", col = 3, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Shorts number x: %d", prop = "ShortsNumberX", col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 14  },
-	{ ui = "Shorts number y: %d", prop = "ShortsNumberY", col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 15  },
-	{ ui = "Shorts number side: %s", prop = "ShortsNumberSide", col = 3, row = 5, 
-		vals = {"Left", "Right"}, keys = {["Left"] = 0, ["Right"] = 1},
-		nextf = rot_left,
-		prevf = rot_right,
-	}, 
-	
-	{ ui = "Name: %s", prop = "Name", col = 4, row = 1, 
-		vals = {"On", "Off"}, keys = {["On"] = 0, ["Off"] = 1},
-		nextf = rot_left,
-		prevf = rot_right,
-	}, 
-	{ ui = "Name shape: %s", prop = "NameShape", col = 4, row = 2, 
-		vals = {"Straight", "Light curve", "Medium curve", "Extreme curve"}, keys = {["Straight"] = 0, ["Light curve"] = 1, ["Medium curve"] = 2, ["Extreme curve"] = 3},
-		nextf = rot_left,
-		prevf = rot_right,
-	}, 
-	{ ui = "Name y: %d", prop = "NameY", col = 4, row = 3, decr = -1, incr = 1, min = 0, max = 17  },
-	{ ui = "Name size: %d", prop = "NameSize", col = 4, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Back number size: %d", prop = "BackNumberSize", col = 4, row = 5, decr = -1, incr = 1, min = 0, max = 14 },
+
+    { ui = "Shorts model: %d", prop = "ShortsModel", col = 3, row = 1, decr = -1, incr = 1, min = 0, max = 17  },
+    { ui = "Shorts number size: %d", prop = "ShortsNumberSize", col = 3, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Shorts number x: %d", prop = "ShortsNumberX", col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 14  },
+    { ui = "Shorts number y: %d", prop = "ShortsNumberY", col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 15  },
+    { ui = "Shorts number side: %s", prop = "ShortsNumberSide", col = 3, row = 5,
+        vals = {"Left", "Right"}, keys = {["Left"] = 0, ["Right"] = 1},
+        nextf = rot_left,
+        prevf = rot_right,
+    },
+
+    { ui = "Name: %s", prop = "Name", col = 4, row = 1,
+        vals = {"On", "Off"}, keys = {["On"] = 0, ["Off"] = 1},
+        nextf = rot_left,
+        prevf = rot_right,
+    },
+    { ui = "Name shape: %s", prop = "NameShape", col = 4, row = 2,
+        vals = {"Straight", "Light curve", "Medium curve", "Extreme curve"}, keys = {["Straight"] = 0, ["Light curve"] = 1, ["Medium curve"] = 2, ["Extreme curve"] = 3},
+        nextf = rot_left,
+        prevf = rot_right,
+    },
+    { ui = "Name y: %d", prop = "NameY", col = 4, row = 3, decr = -1, incr = 1, min = 0, max = 17  },
+    { ui = "Name size: %d", prop = "NameSize", col = 4, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Back number size: %d", prop = "BackNumberSize", col = 4, row = 5, decr = -1, incr = 1, min = 0, max = 14 },
     { ui = "Back number y: %d", prop = "BackNumberY", col = 4, row = 6, decr = -1, incr = 1, min = 0, max = 29  },
-	{ ui = "Back number spacing: %d", prop = "BackNumberSpacing", col = 4, row = 7, decr = -1, incr = 1, min = 0, max = 3  },
-	
-	{ ui = "Badge (Right,S,X): %d", prop = "RightShortX", col = 5, row = 1, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Badge (Right,S,Y): %d", prop = "RightShortY", col = 5, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Badge (Right,L,X): %d", prop = "RightLongX", col = 5, row = 3, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Badge (Right,L,Y): %d", prop = "RightLongY", col = 5, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Badge (Left,S,X): %d", prop = "LeftShortX", col = 5, row = 5, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Badge (Left,S,Y): %d", prop = "LeftShortY", col = 5, row = 6, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Badge (Left,L,X): %d", prop = "LeftLongX", col = 5, row = 7, decr = -1, incr = 1, min = 0, max = 31  },
-	{ ui = "Badge (Left,L,Y): %d", prop = "LeftLongY", col = 5, row = 8, decr = -1, incr = 1, min = 0, max = 31  },
-	
+    { ui = "Back number spacing: %d", prop = "BackNumberSpacing", col = 4, row = 7, decr = -1, incr = 1, min = 0, max = 3  },
+
+    { ui = "Badge (Right,S,X): %d", prop = "RightShortX", col = 5, row = 1, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,S,Y): %d", prop = "RightShortY", col = 5, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,L,X): %d", prop = "RightLongX", col = 5, row = 3, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,L,Y): %d", prop = "RightLongY", col = 5, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,S,X): %d", prop = "LeftShortX", col = 5, row = 5, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,S,Y): %d", prop = "LeftShortY", col = 5, row = 6, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,L,X): %d", prop = "LeftLongX", col = 5, row = 7, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,L,Y): %d", prop = "LeftLongY", col = 5, row = 8, decr = -1, incr = 1, min = 0, max = 31  },
+
 
 }
 local ui_lines = {}
@@ -212,90 +212,90 @@ local grid_menu = {}
 local grid_menu_rows, grid_menu_cols
 local menu_item_width = 29
 local function get_ui_line_by_row_and_col(row, col)
-	for i,v in ipairs(overlay_states) do
-		if v.row == row and v.col == col then
-			return v
-		end
-	end
+    for i,v in ipairs(overlay_states) do
+        if v.row == row and v.col == col then
+            return v
+        end
+    end
 end
 
 local function get_grid_menu_rows_and_cols_count()
-	local r, c = 1, 1
-	for i, v in pairs(overlay_states) do
-		if v.col > c then
-			c = v.col
-		end
-		if v.row > r then
-			r = v.row
-		end
-	end
-	return r, c -- max vaues
+    local r, c = 1, 1
+    for i, v in pairs(overlay_states) do
+        if v.col > c then
+            c = v.col
+        end
+        if v.row > r then
+            r = v.row
+        end
+    end
+    return r, c -- max vaues
 end
 
 local function fill_matrix(m, f)
-	for i = 1, grid_menu_rows do
-		m[i] = {}
-		for j = 1, grid_menu_cols do
-			m[i][j] = f
-		end
-	end
+    for i = 1, grid_menu_rows do
+        m[i] = {}
+        for j = 1, grid_menu_cols do
+            m[i][j] = f
+        end
+    end
 end
 
 local function update_menu_selection()
-	-- highlight the currently selected property and expand them all to equal width (menu_item_width)
-	local curr_sel_prop = overlay_states[overlay_curr]
-	for i, row in pairs(grid_menu) do
-		for j, val in pairs(row) do
-			-- ugly attempt to compare equality of e.g. "Chest number size: %d" and "Chest number size: 26" until the ocurrence of ":"
-			if val:find(":") and curr_sel_prop.ui:find(":") and val:sub(1,val:find(":")-1) == curr_sel_prop.ui:sub(1,curr_sel_prop.ui:find(":")-1) then
-				grid_menu[i][j] = string.format("--> %s <--", pad_to_numchars(val, menu_item_width))
-			else
-				grid_menu[i][j] = string.format("    %s    ", pad_to_numchars(val, menu_item_width))
-			end
-		end
-	end
+    -- highlight the currently selected property and expand them all to equal width (menu_item_width)
+    local curr_sel_prop = overlay_states[overlay_curr]
+    for i, row in pairs(grid_menu) do
+        for j, val in pairs(row) do
+            -- ugly attempt to compare equality of e.g. "Chest number size: %d" and "Chest number size: 26" until the ocurrence of ":"
+            if val:find(":") and curr_sel_prop.ui:find(":") and val:sub(1,val:find(":")-1) == curr_sel_prop.ui:sub(1,curr_sel_prop.ui:find(":")-1) then
+                grid_menu[i][j] = string.format("--> %s <--", pad_to_numchars(val, menu_item_width))
+            else
+                grid_menu[i][j] = string.format("    %s    ", pad_to_numchars(val, menu_item_width))
+            end
+        end
+    end
 end
 
 local function build_grid_menu(team_id, kit_path, cfg)
-	grid_menu = {}
-	fill_matrix(grid_menu, pad_to_numchars(" ", menu_item_width))
-	for i, v in pairs(overlay_states) do -- loop through flat properties list ...
-		local row, col = v.row, v.col
-		for grid_row = 1, grid_menu_rows do
-			for grid_column = 1, grid_menu_cols do
-				local ui_line = get_ui_line_by_row_and_col(grid_row, grid_column)
-				if ui_line then
-					local curr_cfg = cfg and cfg or configEd_settings[team_id][kit_path]
-					-- local prop_configEd_val = configEd_settings[team_id][kit_path][ui_line.prop]
-					local prop_configEd_val = curr_cfg[ui_line.prop]
-					if ui_line.keys then
-						local inv_keys = tableInvert(ui_line.keys)
-						prop_configEd_val = inv_keys[prop_configEd_val]
-					end
-					grid_menu[grid_row][grid_column] = string.format(ui_line.ui, prop_configEd_val)
-				end
-			end
-		end
-	end
-	update_menu_selection()
-	-- for i, v in pairs(grid_menu) do
-	--	log("build_grid_menu:: gm_line: " .. t2s(v))
-	-- end
+    grid_menu = {}
+    fill_matrix(grid_menu, pad_to_numchars(" ", menu_item_width))
+    for i, v in pairs(overlay_states) do -- loop through flat properties list ...
+        local row, col = v.row, v.col
+        for grid_row = 1, grid_menu_rows do
+            for grid_column = 1, grid_menu_cols do
+                local ui_line = get_ui_line_by_row_and_col(grid_row, grid_column)
+                if ui_line then
+                    local curr_cfg = cfg and cfg or configEd_settings[team_id][kit_path]
+                    -- local prop_configEd_val = configEd_settings[team_id][kit_path][ui_line.prop]
+                    local prop_configEd_val = curr_cfg[ui_line.prop]
+                    if ui_line.keys then
+                        local inv_keys = tableInvert(ui_line.keys)
+                        prop_configEd_val = inv_keys[prop_configEd_val]
+                    end
+                    grid_menu[grid_row][grid_column] = string.format(ui_line.ui, prop_configEd_val)
+                end
+            end
+        end
+    end
+    update_menu_selection()
+    -- for i, v in pairs(grid_menu) do
+    --  log("build_grid_menu:: gm_line: " .. t2s(v))
+    -- end
 end
 
 local function KitConfigEditor_get_settings(team_id, kit_path, kit_info)
     -- log(string.format("Into KitConfigEditor_get_settings (%s, %s, %s) ... ", team_id, kit_path, kit_info))
     if kit_path then
         configEd_settings[team_id] = configEd_settings[team_id] or {}
-		configEd_settings[team_id][kit_path] = {}
-		for name, value in pairs(kit_info) do
-			if name and value then
-				value = tonumber(value) or value:gsub("%s+", "") -- strip trailing whitespaces, if it is a string ... 
-				configEd_settings[team_id][kit_path][name] = value
-			end
-		end
-		-- log(string.format("... loaded kit config editor state: %s", t2s(configEd_settings[team_id][kit_path])))
-	end
+        configEd_settings[team_id][kit_path] = {}
+        for name, value in pairs(kit_info) do
+            if name and value then
+                value = tonumber(value) or value:gsub("%s+", "") -- strip trailing whitespaces, if it is a string ...
+                configEd_settings[team_id][kit_path][name] = value
+            end
+        end
+        -- log(string.format("... loaded kit config editor state: %s", t2s(configEd_settings[team_id][kit_path])))
+    end
 end
 
 -- end kit config editor part ...
@@ -719,7 +719,7 @@ function m.key_down(ctx, vkey)
         if is_edit_mode(ctx) then
             config_editor_on = not config_editor_on
             if config_editor_on then
-				-- curr_col = 1 -- for compact edit menu ...
+                -- curr_col = 1 -- for compact edit menu ...
                 local team_id = ctx.kits.get_current_team(0)
                 if team_id and team_id ~= 0x1ffff then
                     ctx.home_team = team_id
@@ -736,7 +736,7 @@ function m.key_down(ctx, vkey)
                         update(ctx.home_team, kit_ord, curr[1], cfg)
                         -- kit config editor part ...
                         KitConfigEditor_get_settings(team_id, curr[1], cfg) -- get current kit data for configEd overlay
-						build_grid_menu(team_id, curr[1])
+                        build_grid_menu(team_id, curr[1])
                         -- end kit config editor part ...
                     end
                 end
@@ -893,37 +893,37 @@ function m.key_down(ctx, vkey)
                 g_away = curr
             end
         end
-	elseif config_editor_on and vkey == NEXT_PROP_KEY then
+    elseif config_editor_on and vkey == NEXT_PROP_KEY then
         if overlay_curr < #overlay_states then
             overlay_curr = overlay_curr + 1
-			
-			-- could this be somehow shortened? easier way to get team_id and curr for the final build_grid_menu(team_id, curr[1]) call?
-			local team_id = ctx.kits.get_current_team(0)
-			if team_id and team_id ~= 65535 then
-				local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
-				local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
-				local kits = is_gk and home_gk_kits or home_kits
-				if kit_ord then
-					local curr = kits[kit_ord]
-					build_grid_menu(team_id, curr[1])
-				end
-			end
+
+            -- could this be somehow shortened? easier way to get team_id and curr for the final build_grid_menu(team_id, curr[1]) call?
+            local team_id = ctx.kits.get_current_team(0)
+            if team_id and team_id ~= 65535 then
+                local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
+                local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
+                local kits = is_gk and home_gk_kits or home_kits
+                if kit_ord then
+                    local curr = kits[kit_ord]
+                    build_grid_menu(team_id, curr[1])
+                end
+            end
         end
     elseif config_editor_on and vkey == PREV_PROP_KEY then
         if overlay_curr > 1 then
             overlay_curr = overlay_curr - 1
-			
-			-- could this be somehow shortened? easier way to get team_id and curr for the final build_grid_menu(team_id, curr[1]) call?
-			local team_id = ctx.kits.get_current_team(0)
-			if team_id and team_id ~= 65535 then
-				local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
-				local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
-				local kits = is_gk and home_gk_kits or home_kits
-				if kit_ord then
-					local curr = kits[kit_ord]
-					build_grid_menu(team_id, curr[1])
-				end
-			end
+
+            -- could this be somehow shortened? easier way to get team_id and curr for the final build_grid_menu(team_id, curr[1]) call?
+            local team_id = ctx.kits.get_current_team(0)
+            if team_id and team_id ~= 65535 then
+                local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
+                local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
+                local kits = is_gk and home_gk_kits or home_kits
+                if kit_ord then
+                    local curr = kits[kit_ord]
+                    build_grid_menu(team_id, curr[1])
+                end
+            end
         end
 
     elseif config_editor_on and vkey == NEXT_VALUE_KEY then
@@ -941,17 +941,17 @@ function m.key_down(ctx, vkey)
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
-				build_grid_menu(team_id, curr[1])
+                build_grid_menu(team_id, curr[1])
             elseif s.nextf ~= nil and team_id then
-				local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
-				log("curr_disp_val: " .. curr_disp_val)
-				local disp_val, conf_val = s.nextf(s.keys, s.vals, curr_disp_val) -- perhaps 3rd parameter (current position?) seems to be restarting from 1 in new session, for scales with more values (gets noticeable with 3+ possible values)
-				log("disp_val (next): " .. disp_val .. " conf_val (next): " .. conf_val)
+                local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
+                log("curr_disp_val: " .. curr_disp_val)
+                local disp_val, conf_val = s.nextf(s.keys, s.vals, curr_disp_val) -- perhaps 3rd parameter (current position?) seems to be restarting from 1 in new session, for scales with more values (gets noticeable with 3+ possible values)
+                log("disp_val (next): " .. disp_val .. " conf_val (next): " .. conf_val)
                 configEd_settings[team_id][curr[1]][s.prop] = conf_val    -- s.nextf(configEd_settings[team_id][curr[1]][s.prop])
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
-				build_grid_menu(team_id, curr[1])
+                build_grid_menu(team_id, curr[1])
             end
         end
 
@@ -970,17 +970,17 @@ function m.key_down(ctx, vkey)
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
-				build_grid_menu(team_id, curr[1])
+                build_grid_menu(team_id, curr[1])
             elseif s.prevf ~= nil and team_id then
-				local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
-				log("curr_disp_val: " .. curr_disp_val)  
-				local disp_val, conf_val = s.prevf(s.keys, s.vals, curr_disp_val) -- perhaps 3rd parameter (current position?) seems to be restarting from 1 in new session, for scales with more values (gets noticeable with 3+ possible values)
-				log("disp_val (prev): " .. disp_val .. " conf_val (prev): " .. conf_val)
+                local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
+                log("curr_disp_val: " .. curr_disp_val)
+                local disp_val, conf_val = s.prevf(s.keys, s.vals, curr_disp_val) -- perhaps 3rd parameter (current position?) seems to be restarting from 1 in new session, for scales with more values (gets noticeable with 3+ possible values)
+                log("disp_val (prev): " .. disp_val .. " conf_val (prev): " .. conf_val)
                 configEd_settings[team_id][curr[1]][s.prop] = conf_val    -- s.prevf(configEd_settings[team_id][curr[1]][s.prop])
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
-				build_grid_menu(team_id, curr[1])
+                build_grid_menu(team_id, curr[1])
             end
         end
     end
@@ -1045,35 +1045,35 @@ local function get_configEd_overlay_states(ctx)
     local kits = is_gk and home_gk_kits or home_kits
     if not kits then
         return "\n\n\n\tCannot find config file for this kit (2)."
-		--return ""
+        --return ""
     end
 
     local update = is_gk and update_gk_kit_config or update_kit_config
-	local curr = kits[kit_ord]
+    local curr = kits[kit_ord]
     if curr and configEd_settings and configEd_settings[team_id] and configEd_settings[team_id][curr[1]]==nil then
         local cfg = table_copy(curr[2])
         update(team_id, kit_ord, curr[1], cfg)
         -- kit config editor part ...
         KitConfigEditor_get_settings(team_id, curr[1], cfg) -- get current kit data for configEd overlay
-		-- end kit config editor part ...
+        -- end kit config editor part ...
     end
     if curr and curr[1] and configEd_settings and configEd_settings[team_id] and tableLength(configEd_settings[team_id]) > 0
             and tableLength(configEd_settings[team_id][curr[1]]) > 0 then
         -- construct ui text
-		
-		-- ADDED TO RESPOND TO UP/DOWN movements in Strip menu - to update overlay
-		local cfg = table_copy(curr[2])
+
+        -- ADDED TO RESPOND TO UP/DOWN movements in Strip menu - to update overlay
+        local cfg = table_copy(curr[2])
         KitConfigEditor_get_settings(team_id, curr[1], cfg) -- get current kit data for configEd overlay - may be called way too often, but for the moment, I don't know how to reliably call this only once, when user goes one choice up/down in Strip menu
-		build_grid_menu(team_id, curr[1], cfg) -- optional 3rd parameter used here      
-		-- .. HOPEFULLY, it won't cause troubles elsewhere
-		
-		-- do something with grid_menu to convert it to ui_lines, if necessary
-		ui_lines = {}
-		for i, row in pairs(grid_menu) do
-			table.insert(ui_lines, tableLength(ui_lines)+1, "\n" .. table.concat(row))
-			-- log("row: " .. table.concat(row))
-		end
-		
+        build_grid_menu(team_id, curr[1], cfg) -- optional 3rd parameter used here
+        -- .. HOPEFULLY, it won't cause troubles elsewhere
+
+        -- do something with grid_menu to convert it to ui_lines, if necessary
+        ui_lines = {}
+        for i, row in pairs(grid_menu) do
+            table.insert(ui_lines, tableLength(ui_lines)+1, "\n" .. table.concat(row))
+            -- log("row: " .. table.concat(row))
+        end
+
         return string.format([[
 
      Kit Config live editor (for now, home team only, chest numbers)
@@ -1122,8 +1122,8 @@ function m.init(ctx)
     ctx.register("after_set_conditions", m.finalize_kits)
     ctx.register("livecpk_make_key", m.make_key)
     ctx.register("livecpk_get_filepath", m.get_filepath)
-	
-	grid_menu_rows, grid_menu_cols = get_grid_menu_rows_and_cols_count()
+
+    grid_menu_rows, grid_menu_cols = get_grid_menu_rows_and_cols_count()
 end
 
 return m
