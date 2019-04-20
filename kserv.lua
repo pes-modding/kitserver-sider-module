@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.5zlac (compact menu)"
+m.version = "1.6zlac (compact menu)"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -143,84 +143,90 @@ local PREV_PROP_KEY = 0x21
 local NEXT_PROP_KEY = 0x22
 local PREV_VALUE_KEY = 0xbd
 local NEXT_VALUE_KEY = 0xbb
+local SWITCH_MENU_PAGE = 0x33
 local overlay_curr = 1
+local overlay_page = 1
 local overlay_states = {
-    { ui = "Short sleeves model: %d", prop = "ShortSleevesModel", col = 1, row = 1, decr = -1, incr = 1, min = 1, max = 1  },
-    { ui = "Shirt model: %s", prop = "ShirtModel", col = 1, row = 2,
+    { ui = "Short sleeves model: %d", prop = "ShortSleevesModel", page = 1, col = 1, row = 1, decr = -1, incr = 1, min = 1, max = 1  },
+    { ui = "Shirt model: %s", prop = "ShirtModel", page = 1, col = 1, row = 2,
         vals = {"144", "151=Semi-long", "160", "176=Legacy"}, keys = {["144"] = 144, ["151=Semi-long"] = 151, ["160"] = 160, ["176=Legacy"] = 176},
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Collar: %d", prop = "Collar", col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 127  },
-    { ui = "Tight kit: %s", prop = "TightKit", col = 1, row = 4,
+    { ui = "Collar: %d", prop = "Collar", page = 1, col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 127  },
+    { ui = "Tight kit: %s", prop = "TightKit", page = 1, col = 1, row = 4,
         vals = {"Off", "On"}, keys = {["Off"] = 0, ["On"] = 1},
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Shirt pattern: %d", prop = "ShirtPattern", col = 1, row = 5, decr = -1, incr = 1, min = 0, max = 6  },
-    { ui = "Winter collar: %d", prop = "WinterCollar", col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 127  },
-    { ui = "Long sleeves: %s", prop = "LongSleevesType", col = 1, row = 7,
+    { ui = "Shirt pattern: %d", prop = "ShirtPattern", page = 1, col = 1, row = 5, decr = -1, incr = 1, min = 0, max = 6  },
+    { ui = "Winter collar: %d", prop = "WinterCollar", page = 1, col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 127  },
+    { ui = "Long sleeves: %s", prop = "LongSleevesType", page = 1, col = 1, row = 7,
         vals = {"Normal&U-Shirt", "Only Undershirt"}, keys = {["Normal&U-Shirt"] = 62, ["Only Undershirt"] = 187},
         nextf = rot_left,
         prevf = rot_right,
     },
 
-    { ui = "Chest number size: %d", prop = "ChestNumberSize", col = 2, row = 1, decr = -1, incr = 1, min = 0, max = 31 },
-    { ui = "Chest number x: %d", prop = "ChestNumberX", col = 2, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Chest number y: %d", prop = "ChestNumberY", col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 7  },
+    { ui = "Chest number size: %d", prop = "ChestNumberSize", page = 1, col = 2, row = 1, decr = -1, incr = 1, min = 0, max = 31 },
+    { ui = "Chest number x: %d", prop = "ChestNumberX", page = 1, col = 2, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Chest number y: %d", prop = "ChestNumberY", page = 1, col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 7  },
 
-    { ui = "Shorts model: %d", prop = "ShortsModel", col = 3, row = 1, decr = -1, incr = 1, min = 0, max = 17  },
-    { ui = "Shorts number size: %d", prop = "ShortsNumberSize", col = 3, row = 2, decr = -1, incr = 1, min = 0, max = 15  },
-    { ui = "Shorts number x: %d", prop = "ShortsNumberX", col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 14  },
-    { ui = "Shorts number y: %d", prop = "ShortsNumberY", col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 15  },
-    { ui = "Shorts number side: %s", prop = "ShortsNumberSide", col = 3, row = 5,
+    { ui = "Shorts model: %d", prop = "ShortsModel", page = 1, col = 2, row = 4, decr = -1, incr = 1, min = 0, max = 17  },
+    { ui = "Shorts number size: %d", prop = "ShortsNumberSize", page = 1, col = 2, row = 5, decr = -1, incr = 1, min = 0, max = 15  },
+    { ui = "Shorts number x: %d", prop = "ShortsNumberX", page = 1, col = 2, row = 6, decr = -1, incr = 1, min = 0, max = 14  },
+    { ui = "Shorts number y: %d", prop = "ShortsNumberY", page = 1, col = 2, row = 7, decr = -1, incr = 1, min = 0, max = 15  },
+    { ui = "Shorts number side: %s", prop = "ShortsNumberSide", page = 1, col = 2, row = 8,
         vals = {"Left", "Right"}, keys = {["Left"] = 0, ["Right"] = 1},
         nextf = rot_left,
         prevf = rot_right,
     },
 
-    { ui = "Name: %s", prop = "Name", col = 4, row = 1,
+    { ui = "Name: %s", prop = "Name", page = 1, col = 3, row = 1,
         vals = {"On", "Off"}, keys = {["On"] = 0, ["Off"] = 1},
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Name shape: %s", prop = "NameShape", col = 4, row = 2,
+    { ui = "Name shape: %s", prop = "NameShape", page = 1, col = 3, row = 2,
         vals = {"Straight", "Light curve", "Medium curve", "Extreme curve"}, keys = {["Straight"] = 0, ["Light curve"] = 1, ["Medium curve"] = 2, ["Extreme curve"] = 3},
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Name y: %d", prop = "NameY", col = 4, row = 3, decr = -1, incr = 1, min = 0, max = 17  },
-    { ui = "Name size: %d", prop = "NameSize", col = 4, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Back number size: %d", prop = "BackNumberSize", col = 4, row = 5, decr = -1, incr = 1, min = 0, max = 14 },
-    { ui = "Back number y: %d", prop = "BackNumberY", col = 4, row = 6, decr = -1, incr = 1, min = 0, max = 29  },
-    { ui = "Back number spacing: %d", prop = "BackNumberSpacing", col = 4, row = 7, decr = -1, incr = 1, min = 0, max = 3  },
+    { ui = "Name y: %d", prop = "NameY", page = 1, col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 17  },
+    { ui = "Name size: %d", prop = "NameSize", page = 1, col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Back number size: %d", prop = "BackNumberSize", page = 1, col = 3, row = 5, decr = -1, incr = 1, min = 0, max = 14 },
+    { ui = "Back number y: %d", prop = "BackNumberY", page = 1, col = 3, row = 6, decr = -1, incr = 1, min = 0, max = 29  },
+    { ui = "Back number spacing: %d", prop = "BackNumberSpacing", page = 1, col = 3, row = 7, decr = -1, incr = 1, min = 0, max = 3  },
 
-    { ui = "Badge (Right,S,X): %d", prop = "RightShortX", col = 5, row = 1, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Right,S,Y): %d", prop = "RightShortY", col = 5, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Right,L,X): %d", prop = "RightLongX", col = 5, row = 3, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Right,L,Y): %d", prop = "RightLongY", col = 5, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Left,S,X): %d", prop = "LeftShortX", col = 5, row = 5, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Left,S,Y): %d", prop = "LeftShortY", col = 5, row = 6, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Left,L,X): %d", prop = "LeftLongX", col = 5, row = 7, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Left,L,Y): %d", prop = "LeftLongY", col = 5, row = 8, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,S,X): %d", prop = "RightShortX", page = 1, col = 4, row = 1, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,S,Y): %d", prop = "RightShortY", page = 1, col = 4, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,L,X): %d", prop = "RightLongX", page = 1, col = 4, row = 3, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,L,Y): %d", prop = "RightLongY", page = 1, col = 4, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,S,X): %d", prop = "LeftShortX", page = 1, col = 4, row = 5, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,S,Y): %d", prop = "LeftShortY", page = 1, col = 4, row = 6, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,L,X): %d", prop = "LeftLongX", page = 1, col = 4, row = 7, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,L,Y): %d", prop = "LeftLongY", page = 1, col = 4, row = 8, decr = -1, incr = 1, min = 0, max = 31  },
+
+    { ui = "ShirtColor1 (R): %s", prop = "ShirtColor1", subprop = "R", subprop_type = "COLOR", page = 2, col = 1, row = 1, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "ShirtColor1 (G): %s", prop = "ShirtColor1", subprop = "G", subprop_type = "COLOR", page = 2, col = 1, row = 2, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "ShirtColor1 (B): %s", prop = "ShirtColor1", subprop = "B", subprop_type = "COLOR", page = 2, col = 1, row = 3, decr = -1, incr = 1, min = 0, max = 255  },
 
 
 }
 local ui_lines = {}
 
 local grid_menu = {}
-local grid_menu_rows, grid_menu_cols
+local grid_menu_rows, grid_menu_cols, grid_menu_pages
 local menu_item_width = 29
-local function get_ui_line_by_row_and_col(row, col)
+local function get_ui_line_by_page_row_and_col(page, row, col)
     for i,v in ipairs(overlay_states) do
-        if v.row == row and v.col == col then
+        if v.page == page and v.row == row and v.col == col then
             return v
         end
     end
 end
 
-local function get_grid_menu_rows_and_cols_count()
-    local r, c = 1, 1
+local function get_grid_menu_params()
+    local r, c, p = 1, 1, 1
     for i, v in pairs(overlay_states) do
         if v.col > c then
             c = v.col
@@ -228,15 +234,72 @@ local function get_grid_menu_rows_and_cols_count()
         if v.row > r then
             r = v.row
         end
+        if v.page > p then
+            p = v.page
+        end
     end
-    return r, c -- max vaues
+    return r, c, p -- max values
 end
 
 local function fill_matrix(m, f)
-    for i = 1, grid_menu_rows do
+    for i = 1, grid_menu_pages do
         m[i] = {}
-        for j = 1, grid_menu_cols do
-            m[i][j] = f
+        for j = 1, grid_menu_rows do
+            m[i][j] = {}
+            for k = 1, grid_menu_cols do
+                m[i][j][k] = f
+            end
+        end
+    end
+end
+
+local function RGB_parts(color_str)
+    -- color_str should be formatted as "#RRGGBB"
+    local parts = {}
+    if color_str:sub(1, 1) == "#" and #color_str == 7 then
+        parts["R"] = tonumber( "0x" .. color_str:sub(2, 3) )
+        parts["G"] = tonumber( "0x" .. color_str:sub(4, 5) )
+        parts["B"] = tonumber( "0x" .. color_str:sub(6, 7) )
+    end
+    return parts
+end
+
+local function get_subprop_colors(color_val, state)
+    if state then
+        if state.subprop_type and state.subprop_type == "COLOR" then
+            local color_parts = RGB_parts(color_val)
+            if tableLength(color_parts) > 0 then
+                return color_parts
+            end
+        end
+    end
+end
+
+local function update_subprop_colors(color_val, sub_color_val, state)
+    local final_color = color_val -- string #RRGGBB
+    if state then
+        if state.subprop_type and state.subprop_type == "COLOR" then
+            local hex_subcolor = string.format("%02X",sub_color_val)
+            log("hex subcolor:: " .. state.subprop .. ": " .. hex_subcolor)
+            if state.subprop == "R" then
+                final_color = "#" .. hex_subcolor .. final_color:sub(4,7)
+                log("final color (change red: ): " .. final_color)
+            elseif state.subprop == "G" then
+                final_color = "#" .. final_color:sub(2,3) .. hex_subcolor .. final_color:sub(6,7)
+                log("final color (change green: ): " .. final_color)
+            elseif state.subprop == "B" then
+                final_color = "#" .. final_color:sub(2,5) .. hex_subcolor
+                log("final color (change blue: ): " .. final_color)
+            end
+        end
+    end
+    return final_color
+end
+
+local function first_overlay_state_on_page(page)
+    for i, val in pairs(overlay_states) do
+        if val.page == page and val.row == 1 and val.col == 1 then
+            return i
         end
     end
 end
@@ -244,13 +307,15 @@ end
 local function update_menu_selection()
     -- highlight the currently selected property and expand them all to equal width (menu_item_width)
     local curr_sel_prop = overlay_states[overlay_curr]
-    for i, row in pairs(grid_menu) do
-        for j, val in pairs(row) do
-            -- ugly attempt to compare equality of e.g. "Chest number size: %d" and "Chest number size: 26" until the ocurrence of ":"
-            if val:find(":") and curr_sel_prop.ui:find(":") and val:sub(1,val:find(":")-1) == curr_sel_prop.ui:sub(1,curr_sel_prop.ui:find(":")-1) then
-                grid_menu[i][j] = string.format("--> %s <--", pad_to_numchars(val, menu_item_width))
-            else
-                grid_menu[i][j] = string.format("    %s    ", pad_to_numchars(val, menu_item_width))
+    for i, page in pairs(grid_menu) do
+        for j, row in pairs(page) do
+            for k, val in pairs(row) do
+                -- ugly attempt to compare equality of e.g. "Chest number size: %d" and "Chest number size: 26" until the ocurrence of ":"
+                if val:find(":") and curr_sel_prop.ui:find(":") and val:sub(1,val:find(":")-1) == curr_sel_prop.ui:sub(1,curr_sel_prop.ui:find(":")-1) then
+                    grid_menu[i][j][k] = string.format("--> %s <--", pad_to_numchars(val, menu_item_width))
+                else
+                    grid_menu[i][j][k] = string.format("    %s    ", pad_to_numchars(val, menu_item_width))
+                end
             end
         end
     end
@@ -261,18 +326,25 @@ local function build_grid_menu(team_id, kit_path, cfg)
     fill_matrix(grid_menu, pad_to_numchars(" ", menu_item_width))
     for i, v in pairs(overlay_states) do -- loop through flat properties list ...
         local row, col = v.row, v.col
-        for grid_row = 1, grid_menu_rows do
-            for grid_column = 1, grid_menu_cols do
-                local ui_line = get_ui_line_by_row_and_col(grid_row, grid_column)
-                if ui_line then
-                    local curr_cfg = cfg and cfg or configEd_settings[team_id][kit_path]
-                    -- local prop_configEd_val = configEd_settings[team_id][kit_path][ui_line.prop]
-                    local prop_configEd_val = curr_cfg[ui_line.prop]
-                    if ui_line.keys then
-                        local inv_keys = tableInvert(ui_line.keys)
-                        prop_configEd_val = inv_keys[prop_configEd_val]
+        for grid_page = 1, grid_menu_pages do
+            for grid_row = 1, grid_menu_rows do
+                for grid_column = 1, grid_menu_cols do
+                    local ui_line = get_ui_line_by_page_row_and_col(grid_page, grid_row, grid_column)
+                    if ui_line then
+                        local curr_cfg = cfg and cfg or configEd_settings[team_id][kit_path]
+                        -- local prop_configEd_val = configEd_settings[team_id][kit_path][ui_line.prop]
+                        local prop_configEd_val = curr_cfg[ui_line.prop]
+                        if ui_line.keys then
+                            local inv_keys = tableInvert(ui_line.keys)
+                            prop_configEd_val = inv_keys[prop_configEd_val]
+                        end
+                        if ui_line.subprop and ui_line.subprop_type == "COLOR" then
+                            local color_parts = RGB_parts(prop_configEd_val)
+                            local subcolor_val = color_parts[ui_line.subprop]
+                            prop_configEd_val = subcolor_val
+                        end
+                        grid_menu[grid_page][grid_row][grid_column] = string.format(ui_line.ui, prop_configEd_val)
                     end
-                    grid_menu[grid_row][grid_column] = string.format(ui_line.ui, prop_configEd_val)
                 end
             end
         end
@@ -289,7 +361,7 @@ local function KitConfigEditor_get_settings(team_id, kit_path, kit_info)
         configEd_settings[team_id] = configEd_settings[team_id] or {}
         configEd_settings[team_id][kit_path] = {}
         for name, value in pairs(kit_info) do
-            if name and value then
+            if name and value and not configEd_settings[team_id][kit_path][name] then -- do not repeatedly overwrite color properties that will use subprops
                 value = tonumber(value) or value:gsub("%s+", "") -- strip trailing whitespaces, if it is a string ...
                 configEd_settings[team_id][kit_path][name] = value
             end
@@ -337,7 +409,7 @@ local function load_map(filename)
     for line in io.lines(filename) do
         -- strip comment
         line = string.gsub(line, "#.*", "")
-        tid, path = string.match(line, "%s*(%d+)%s*,%s*[\"]?([^\"]*)")
+        local tid, path = string.match(line, "%s*(%d+)%s*,%s*[\"]?([^\"]*)")
         tid = tonumber(tid)
         if tid and path then
             map[tid] = path
@@ -937,7 +1009,19 @@ function m.key_down(ctx, vkey)
             log(string.format("curr: %s, %s", curr[1], t2s(curr[2])))
             local team_id = ctx.kits.get_current_team(0)
             if s.incr ~= nil and team_id then
-                configEd_settings[team_id][curr[1]][s.prop] = math.min(configEd_settings[team_id][curr[1]][s.prop] + s.incr, s.max)
+                if s.subprop and s.subprop_type == "COLOR" then
+                    local curr_color = configEd_settings[team_id][curr[1]][s.prop]
+                    -- extract current sub-color from color string
+                    local subprop_colors = get_subprop_colors(curr_color, s)
+                    local curr_sub_color = subprop_colors[s.subprop] -- s.subprop used as key is either "R" or "G" or "B"
+                    -- increase current sub-color
+                    curr_sub_color = math.min(curr_sub_color + s.incr, s.max)
+                    -- combine increased sub-color with other two color parts
+                    local new_color = update_subprop_colors(curr_color, curr_sub_color, s)
+                    configEd_settings[team_id][curr[1]][s.prop] = new_color
+                else
+                    configEd_settings[team_id][curr[1]][s.prop] = math.min(configEd_settings[team_id][curr[1]][s.prop] + s.incr, s.max)
+                end
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
@@ -966,7 +1050,20 @@ function m.key_down(ctx, vkey)
             log(string.format("curr: %s, %s", curr[1], t2s(curr[2])))
             local team_id = ctx.kits.get_current_team(0)
             if s.decr ~= nil and team_id then
-                configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
+                -- configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
+                if s.subprop and s.subprop_type == "COLOR" then
+                    local curr_color = configEd_settings[team_id][curr[1]][s.prop]
+                    -- extract current sub-color from color string
+                    local subprop_colors = get_subprop_colors(curr_color, s)
+                    local curr_sub_color = subprop_colors[s.subprop] -- s.subprop used as key is either "R" or "G" or "B"
+                    -- increase current sub-color
+                    curr_sub_color = math.max(s.min, curr_sub_color + s.decr)
+                    -- combine increased sub-color with other two color parts
+                    local new_color = update_subprop_colors(curr_color, curr_sub_color, s)
+                    configEd_settings[team_id][curr[1]][s.prop] = new_color
+                else
+                    configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
+                end
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
@@ -982,6 +1079,15 @@ function m.key_down(ctx, vkey)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
                 build_grid_menu(team_id, curr[1])
             end
+        end
+    elseif config_editor_on and vkey == SWITCH_MENU_PAGE then
+        overlay_page = overlay_page + 1
+        if overlay_page > grid_menu_pages then
+            overlay_page = 1
+        end
+        overlay_curr = first_overlay_state_on_page(overlay_page)
+        if not overlay_curr then
+            overlay_curr = 1
         end
     end
 end
@@ -1069,7 +1175,8 @@ local function get_configEd_overlay_states(ctx)
 
         -- do something with grid_menu to convert it to ui_lines, if necessary
         ui_lines = {}
-        for i, row in pairs(grid_menu) do
+        -- for i, row in pairs(grid_menu) do
+        for i, row in pairs(grid_menu[overlay_page]) do
             table.insert(ui_lines, tableLength(ui_lines)+1, "\n" .. table.concat(row))
             -- log("row: " .. table.concat(row))
         end
@@ -1096,7 +1203,7 @@ function m.overlay_on(ctx)
             ctx.home_team = _team_id
             prep_home_team(ctx)
         end
-        return string.format("team:%d, kit:%s | [2] - Editor (%s), [6] - switch kit, [0] - reload map"
+        return string.format("team:%d, kit:%s | [2] - Editor (%s), [3] - Next menu page, [6] - switch kit, [0] - reload map"
                 -- kit config editor part ...
                 .. "\n" ..
                 get_configEd_overlay_states(ctx),
@@ -1123,7 +1230,7 @@ function m.init(ctx)
     ctx.register("livecpk_make_key", m.make_key)
     ctx.register("livecpk_get_filepath", m.get_filepath)
 
-    grid_menu_rows, grid_menu_cols = get_grid_menu_rows_and_cols_count()
+    grid_menu_rows, grid_menu_cols, grid_menu_pages = get_grid_menu_params()
 end
 
 return m
