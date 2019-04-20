@@ -436,7 +436,7 @@ local function load_config(filename)
         local comment = string.match(line, ";.*")
         -- strip comment
         line = string.gsub(line, ";.*", "")
-        key, value = string.match(line, "%s*(%w+)%s*=%s*[\"]?([^\"]*)")
+        key, value = string.match(line, "%s*([%w_]+)%s*=%s*[\"]?([^\"]*)")
         -- strip trailing space from value
         value = value and string.gsub(value, "%s*$", "") or nil
         -- convert to number of we can
