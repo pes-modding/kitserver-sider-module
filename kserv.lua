@@ -37,6 +37,20 @@ local p_away
 local g_home
 local g_away
 
+local patterns = {
+    ["\\(k%d+p%d+)%.ftex$"] = "KitFile",
+    ["\\(k%d+p%d+_srm)%.ftex$"] = "KitFile_srm",
+    ["\\(k%d+p%d+_c)%.ftex$"] = "ChestNumbersFile",
+    ["\\(k%d+p%d+_l)%.ftex$"] = "LegNumbersFile",
+    ["\\(k%d+p%d+_b)%.ftex$"] = "BackNumbersFile",
+    ["\\(k%d+p%d+_n)%.ftex$"] = "NameFontFile",
+    ["\\(k%d+g%d+)%.ftex$"] = "KitFile",
+    ["\\(k%d+g%d+_srm)%.ftex$"] = "KitFile_srm",
+    ["\\(k%d+g%d+_c)%.ftex$"] = "ChestNumbersFile",
+    ["\\(k%d+g%d+_l)%.ftex$"] = "LegNumbersFile",
+    ["\\(k%d+g%d+_b)%.ftex$"] = "BackNumbersFile",
+    ["\\(k%d+g%d+_n)%.ftex$"] = "NameFontFile",
+}
 local ks_player_formats = {
     KitFile = "k%dp%d",
     KitFile_srm = "k%dp%d_srm",
