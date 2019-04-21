@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.6zlac (compact menu)"
+m.version = "1.7"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -673,6 +673,42 @@ function m.set_teams(ctx, home, away)
     reset_match(ctx)
 end
 
+function m.set_home_team_for_kits(ctx, team_id, edit_mode)
+    log(string.format("set_home_team_for_kits CALLED with %s,%s", team_id, edit_mode))
+    if edit_mode == 1 then
+        -- keep track
+        ctx.home_team = team_id
+        _team_id = team_id
+
+        -- clear state
+        reset_match(ctx)
+        config_editor_on = false
+
+        -- apply GDB kits for the team
+        if home_kits and #home_kits>0 then
+            for i,ki in ipairs(home_kits) do
+                local org_cfg = ctx.kits.get(team_id, i-1)
+                log(string.format("i=%d, org_cfg=%s", i, org_cfg))
+                if org_cfg then -- check if we can go this far in list of kits
+                    local cfg = table_copy(ki[2])
+                    update_kit_config(team_id, i, ki[1], cfg)
+                    ctx.kits.set(team_id, i-1, cfg)
+                    home_loaded_for[i-1] = i
+                end
+            end
+            home_next_kit = 1
+        end
+        if home_gk_kits and #home_gk_kits>0 then
+            local ki = home_gk_kits[1]
+            local cfg = table_copy(ki[2])
+            update_gk_kit_config(team_id, 1, ki[1], cfg)
+            ctx.kits.set_gk(team_id, cfg)
+            home_gk_loaded_for[0] = 1
+            home_next_gk_kit = 1
+        end
+    end
+end
+
 function m.set_kits(ctx, home_info, away_info)
     log(string.format("set_kits: home_info (team=%d): %s", ctx.home_team, t2s(home_info)))
     log(string.format("set_kits: away_info (team=%d): %s", ctx.away_team, t2s(away_info)))
@@ -745,7 +781,7 @@ function m.make_key(ctx, filename)
     --log("wants: " .. filename)
     local key = kfile_remap[filename]
     if key then
-        log(string.format("mapped: {%s} ==> {%s}", filename, key))
+        --log(string.format("mapped: {%s} ==> {%s}", filename, key))
         return key
     end
 end
@@ -1196,14 +1232,8 @@ end
 
 function m.overlay_on(ctx)
     if is_edit_mode(ctx) then
-        _team_id = ctx.kits.get_current_team(0)
         _kit_id, _is_gk = ctx.kits.get_current_kit_id(0)
-        if ctx.home_team ~= _team_id then
-            -- team changed: reset
-            ctx.home_team = _team_id
-            prep_home_team(ctx)
-        end
-        return string.format("team:%d, kit:%s | [2] - Editor (%s), [3] - Next menu page, [6] - switch kit, [0] - reload map"
+        return string.format("team:%s, kit:%s | [2] - Editor (%s), [3] - Next menu page, [6] - switch kit, [0] - reload map"
                 -- kit config editor part ...
                 .. "\n" ..
                 get_configEd_overlay_states(ctx),
@@ -1226,6 +1256,7 @@ function m.init(ctx)
     ctx.register("key_up", m.key_up)
     ctx.register("set_teams", m.set_teams)
     ctx.register("set_kits", m.set_kits)
+    ctx.register("set_home_team_for_kits", m.set_home_team_for_kits)
     ctx.register("after_set_conditions", m.finalize_kits)
     ctx.register("livecpk_make_key", m.make_key)
     ctx.register("livecpk_get_filepath", m.get_filepath)
