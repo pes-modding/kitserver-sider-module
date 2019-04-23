@@ -1080,8 +1080,8 @@ function m.key_down(ctx, vkey)
                     configEd_settings[team_id][curr[1]][s.prop] = math.min(configEd_settings[team_id][curr[1]][s.prop] + s.incr, s.max)
                 end
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
-                update(team_id, kit_ord, curr[1], cfg)
-                apply_changes(team_id, kits[kit_ord], cfg, true)
+                --update(team_id, kit_ord, curr[1], cfg)
+                apply_changes(team_id, kits[kit_ord], cfg, false)
                 build_grid_menu(team_id, curr[1])
             elseif s.nextf ~= nil and team_id then
                 local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
@@ -1090,8 +1090,8 @@ function m.key_down(ctx, vkey)
                 -- log("disp_val (next): " .. disp_val .. " conf_val (next): " .. conf_val)
                 configEd_settings[team_id][curr[1]][s.prop] = conf_val
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
-                update(team_id, kit_ord, curr[1], cfg)
-                apply_changes(team_id, kits[kit_ord], cfg, true)
+                --update(team_id, kit_ord, curr[1], cfg)
+                apply_changes(team_id, kits[kit_ord], cfg, false)
                 build_grid_menu(team_id, curr[1])
             end
         end
@@ -1122,8 +1122,8 @@ function m.key_down(ctx, vkey)
                     configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
                 end
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
-                update(team_id, kit_ord, curr[1], cfg)
-                apply_changes(team_id, kits[kit_ord], cfg, true)
+                --update(team_id, kit_ord, curr[1], cfg)
+                apply_changes(team_id, kits[kit_ord], cfg, false)
                 build_grid_menu(team_id, curr[1])
             elseif s.prevf ~= nil and team_id then
                 local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
@@ -1132,8 +1132,8 @@ function m.key_down(ctx, vkey)
                 -- log("disp_val (prev): " .. disp_val .. " conf_val (prev): " .. conf_val)
                 configEd_settings[team_id][curr[1]][s.prop] = conf_val
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
-                update(team_id, kit_ord, curr[1], cfg)
-                apply_changes(team_id, kits[kit_ord], cfg, true)
+                --update(team_id, kit_ord, curr[1], cfg)
+                apply_changes(team_id, kits[kit_ord], cfg, false)
                 build_grid_menu(team_id, curr[1])
             end
         end
