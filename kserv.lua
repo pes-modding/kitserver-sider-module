@@ -23,6 +23,9 @@ local modes = { "PLAYERS", "GOALKEEPERS" }
 
 local home_loaded_for = {}
 local home_gk_loaded_for = {}
+local away_loaded_for = {}
+local away_gk_loaded_for = {}
+
 local config_editor_on
 
 -- edit mode
@@ -661,6 +664,9 @@ end
 local function reset_match(ctx)
     home_loaded_for = {}
     home_gk_loaded_for = {}
+    away_loaded_for = {}
+    away_gk_loaded_for = {}
+
     p_home, p_away = nil, nil
     g_home, g_away = nil, nil
     is_gk_mode = false -- always start in Players mode
@@ -669,8 +675,61 @@ local function reset_match(ctx)
     prep_away_team(ctx)
 end
 
+local function init_home_team_kits(ctx, team_id, set_shirt_colors)
+    if home_kits and #home_kits>0 then
+        for i,ki in ipairs(home_kits) do
+            local org_cfg = ctx.kits.get(team_id, i-1)
+            log(string.format("i=%d, org_cfg=%s", i, org_cfg))
+            if org_cfg then -- check if we can go this far in list of kits
+                local cfg = table_copy(ki[2])
+                update_kit_config(team_id, i, ki[1], cfg)
+                local radar_flag = i==1 and 0 or nil
+                local shirt_colors_flag = set_shirt_colors and 0 or nil
+                ctx.kits.set(team_id, i-1, cfg, radar_flag, shirt_colors_flag)
+                home_loaded_for[i-1] = i
+            end
+        end
+        home_next_kit = 1
+    end
+    if home_gk_kits and #home_gk_kits>0 then
+        local ki = home_gk_kits[1]
+        local cfg = table_copy(ki[2])
+        update_gk_kit_config(team_id, 1, ki[1], cfg)
+        ctx.kits.set_gk(team_id, cfg)
+        home_gk_loaded_for[0] = 1
+        home_next_gk_kit = 1
+    end
+end
+
+local function init_away_team_kits(ctx, team_id)
+    if away_kits and #away_kits>0 then
+        for i,ki in ipairs(away_kits) do
+            local org_cfg = ctx.kits.get(team_id, i-1)
+            log(string.format("i=%d, org_cfg=%s", i, org_cfg))
+            if org_cfg then -- check if we can go this far in list of kits
+                local cfg = table_copy(ki[2])
+                update_kit_config(team_id, i, ki[1], cfg)
+                local radar_flag = i==1 and 1 or nil
+                ctx.kits.set(team_id, i-1, cfg, radar_flag, 1)
+                away_loaded_for[i-1] = i
+            end
+        end
+        away_next_kit = 1
+    end
+    if away_gk_kits and #away_gk_kits>0 then
+        local ki = away_gk_kits[1]
+        local cfg = table_copy(ki[2])
+        update_gk_kit_config(team_id, 1, ki[1], cfg)
+        ctx.kits.set_gk(team_id, cfg)
+        away_gk_loaded_for[0] = 1
+        away_next_gk_kit = 1
+    end
+end
+
 function m.set_teams(ctx, home, away)
     reset_match(ctx)
+    init_home_team_kits(ctx, home)
+    init_away_team_kits(ctx, away)
 end
 
 function m.set_home_team_for_kits(ctx, team_id, edit_mode)
@@ -685,27 +744,7 @@ function m.set_home_team_for_kits(ctx, team_id, edit_mode)
         config_editor_on = false
 
         -- apply GDB kits for the team
-        if home_kits and #home_kits>0 then
-            for i,ki in ipairs(home_kits) do
-                local org_cfg = ctx.kits.get(team_id, i-1)
-                log(string.format("i=%d, org_cfg=%s", i, org_cfg))
-                if org_cfg then -- check if we can go this far in list of kits
-                    local cfg = table_copy(ki[2])
-                    update_kit_config(team_id, i, ki[1], cfg)
-                    ctx.kits.set(team_id, i-1, cfg)
-                    home_loaded_for[i-1] = i
-                end
-            end
-            home_next_kit = 1
-        end
-        if home_gk_kits and #home_gk_kits>0 then
-            local ki = home_gk_kits[1]
-            local cfg = table_copy(ki[2])
-            update_gk_kit_config(team_id, 1, ki[1], cfg)
-            ctx.kits.set_gk(team_id, cfg)
-            home_gk_loaded_for[0] = 1
-            home_next_gk_kit = 1
-        end
+        init_home_team_kits(ctx, team_id, false)
     end
 end
 
@@ -715,66 +754,21 @@ function m.set_kits(ctx, home_info, away_info)
     --dump_kit_config(string.format("%s%d-%s-config.txt", ctx.sider_dir, ctx.home_team, home_info.kit_id), home_info)
     --dump_kit_config(string.format("%s%d-%s-config.txt", ctx.sider_dir, ctx.away_team, away_info.kit_id), away_info)
 
-    reset_match(ctx)
-
-    -- load corresponding kits, if available in GDB
-    local hi
     if home_kits and #home_kits > 0 then
-        local kit_id = ctx.kits.get_current_kit_id(0)
-        local ki = home_kits[kit_id+1]
-        hi = ki and ki[2] or nil
-        if hi then
-            local kit_path = ki[1]
-            log("loading home kit: "  .. kit_path)
-            home_next_kit = kit_id+1
-            update_kit_config(ctx.home_team, home_next_kit, kit_path, hi)
-            log(string.format("home cfg returned (%s): %s", kit_path, t2s(hi)))
-        end
+        home_next_kit = ctx.kits.get_current_kit_id(0) + 1
         p_home = get_curr_kit(ctx, ctx.home_team, 0)
     end
-    local ai
     if away_kits and #away_kits > 0 then
-        local kit_id = ctx.kits.get_current_kit_id(1)
-        local ki = away_kits[kit_id+1]
-        ai = ki and ki[2] or nil
-        if ai then
-            local kit_path = ki[1]
-            log("loading away kit: "  .. kit_path)
-            away_next_kit = kit_id+1
-            update_kit_config(ctx.away_team, away_next_kit, kit_path, ai)
-            log(string.format("away cfg returned (%s): %s", kit_path, t2s(ai)))
-        end
+        away_next_kit = ctx.kits.get_current_kit_id(1) + 1
         p_away = get_curr_kit(ctx, ctx.away_team, 1)
     end
 
-    -- set gk kits, if we have them
     if home_gk_kits and #home_gk_kits>0 then
-        local ki = home_gk_kits[1]
-        local cfg = ki and ki[2] or nil
-        if cfg then
-            local kit_path = ki[1]
-            log("loading home GK kit: "  .. kit_path)
-            home_next_gk_kit = 1
-            update_gk_kit_config(ctx.home_team, home_next_gk_kit, kit_path, cfg)
-            ctx.kits.set_gk(ctx.home_team, cfg)
-        end
         g_home = get_curr_gk_kit(ctx, ctx.home_team)
     end
     if away_gk_kits and #away_gk_kits>0 then
-        local ki = away_gk_kits[1]
-        local cfg = ki and ki[2] or nil
-        if cfg then
-            local kit_path = ki[1]
-            log("loading away GK kit: "  .. kit_path)
-            away_next_gk_kit = 1
-            update_gk_kit_config(ctx.away_team, away_next_gk_kit, kit_path, cfg)
-            ctx.kits.set_gk(ctx.away_team, cfg)
-        end
         g_away = get_curr_gk_kit(ctx, ctx.away_team)
     end
-    --dump_kit_config(string.format("%s%d-%s-gk-config.txt", ctx.sider_dir, ctx.home_team, 0), g_home[2])
-    --dump_kit_config(string.format("%s%d-%s-gk-config.txt", ctx.sider_dir, ctx.away_team, 0), g_away[2])
-    return hi, ai
 end
 
 function m.make_key(ctx, filename)
@@ -935,7 +929,8 @@ function m.key_down(ctx, vkey)
                 -- trigger refresh
                 local kit_id = ctx.kits.get_current_kit_id(0)
                 home_loaded_for[kit_id] = home_next_kit
-                ctx.kits.set(ctx.home_team, kit_id, cfg, 0)
+                local shirt_colors_flag = (not is_edit_mode(ctx)) and 0 or nil
+                ctx.kits.set(ctx.home_team, kit_id, cfg, 0, shirt_colors_flag)
                 ctx.kits.refresh(0)
                 p_home = curr
             end
@@ -980,7 +975,7 @@ function m.key_down(ctx, vkey)
                 update_kit_config(ctx.away_team, away_next_kit, curr[1], cfg)
                 -- trigger refresh
                 local kit_id = ctx.kits.get_current_kit_id(1)
-                ctx.kits.set(ctx.away_team, kit_id, cfg, 1)
+                ctx.kits.set(ctx.away_team, kit_id, cfg, 1, 1)
                 ctx.kits.refresh(1)
                 p_away = curr
             end
