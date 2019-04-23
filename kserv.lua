@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.7"
+m.version = "1.8"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -200,19 +200,39 @@ local overlay_states = {
     { ui = "Back number y: %d", prop = "BackNumberY", page = 1, col = 3, row = 6, decr = -1, incr = 1, min = 0, max = 29  },
     { ui = "Back number spacing: %d", prop = "BackNumberSpacing", page = 1, col = 3, row = 7, decr = -1, incr = 1, min = 0, max = 3  },
 
-    { ui = "Badge (Right,S,X): %d", prop = "RightShortX", page = 1, col = 4, row = 1, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Right,S,Y): %d", prop = "RightShortY", page = 1, col = 4, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Right,L,X): %d", prop = "RightLongX", page = 1, col = 4, row = 3, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Right,L,Y): %d", prop = "RightLongY", page = 1, col = 4, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Left,S,X): %d", prop = "LeftShortX", page = 1, col = 4, row = 5, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Left,S,Y): %d", prop = "LeftShortY", page = 1, col = 4, row = 6, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Left,L,X): %d", prop = "LeftLongX", page = 1, col = 4, row = 7, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Badge (Left,L,Y): %d", prop = "LeftLongY", page = 1, col = 4, row = 8, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,Short,X): %d", prop = "RightShortX", page = 1, col = 4, row = 1, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,Short,Y): %d", prop = "RightShortY", page = 1, col = 4, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,Long,X): %d", prop = "RightLongX", page = 1, col = 4, row = 3, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Right,Long,Y): %d", prop = "RightLongY", page = 1, col = 4, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,Short,X): %d", prop = "LeftShortX", page = 1, col = 4, row = 5, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,Short,Y): %d", prop = "LeftShortY", page = 1, col = 4, row = 6, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,Long,X): %d", prop = "LeftLongX", page = 1, col = 4, row = 7, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Badge (Left,Long,Y): %d", prop = "LeftLongY", page = 1, col = 4, row = 8, decr = -1, incr = 1, min = 0, max = 31  },
 
     { ui = "ShirtColor1 (R): %s", prop = "ShirtColor1", subprop = "R", subprop_type = "COLOR", page = 2, col = 1, row = 1, decr = -1, incr = 1, min = 0, max = 255  },
     { ui = "ShirtColor1 (G): %s", prop = "ShirtColor1", subprop = "G", subprop_type = "COLOR", page = 2, col = 1, row = 2, decr = -1, incr = 1, min = 0, max = 255  },
     { ui = "ShirtColor1 (B): %s", prop = "ShirtColor1", subprop = "B", subprop_type = "COLOR", page = 2, col = 1, row = 3, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "ShirtColor2 (R): %s", prop = "ShirtColor2", subprop = "R", subprop_type = "COLOR", page = 2, col = 1, row = 4, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "ShirtColor2 (G): %s", prop = "ShirtColor2", subprop = "G", subprop_type = "COLOR", page = 2, col = 1, row = 5, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "ShirtColor2 (B): %s", prop = "ShirtColor2", subprop = "B", subprop_type = "COLOR", page = 2, col = 1, row = 6, decr = -1, incr = 1, min = 0, max = 255  },
 
+    { ui = "UndershirtColor (R): %s", prop = "UndershirtColor", subprop = "R", subprop_type = "COLOR", page = 2, col = 2, row = 1, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "UndershirtColor (G): %s", prop = "UndershirtColor", subprop = "G", subprop_type = "COLOR", page = 2, col = 2, row = 2, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "UndershirtColor (B): %s", prop = "UndershirtColor", subprop = "B", subprop_type = "COLOR", page = 2, col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 255  },
+
+    { ui = "ShortsColor (R): %s", prop = "ShortsColor", subprop = "R", subprop_type = "COLOR", page = 2, col = 3, row = 1, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "ShortsColor (G): %s", prop = "ShortsColor", subprop = "G", subprop_type = "COLOR", page = 2, col = 3, row = 2, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "ShortsColor (B): %s", prop = "ShortsColor", subprop = "B", subprop_type = "COLOR", page = 2, col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "SocksColor (R): %s", prop = "SocksColor", subprop = "R", subprop_type = "COLOR", page = 2, col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "SocksColor (G): %s", prop = "SocksColor", subprop = "G", subprop_type = "COLOR", page = 2, col = 3, row = 5, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "SocksColor (B): %s", prop = "SocksColor", subprop = "B", subprop_type = "COLOR", page = 2, col = 3, row = 6, decr = -1, incr = 1, min = 0, max = 255  },
+
+    { ui = "UniColor Color1 (R): %s", prop = "UniColor_Color1", subprop = "R", subprop_type = "COLOR", page = 2, col = 4, row = 1, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "UniColor Color1 (G): %s", prop = "UniColor_Color1", subprop = "G", subprop_type = "COLOR", page = 2, col = 4, row = 2, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "UniColor Color1 (B): %s", prop = "UniColor_Color1", subprop = "B", subprop_type = "COLOR", page = 2, col = 4, row = 3, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "UniColor Color2 (R): %s", prop = "UniColor_Color2", subprop = "R", subprop_type = "COLOR", page = 2, col = 4, row = 4, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "UniColor Color2 (G): %s", prop = "UniColor_Color2", subprop = "G", subprop_type = "COLOR", page = 2, col = 4, row = 5, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "UniColor Color2 (B): %s", prop = "UniColor_Color2", subprop = "B", subprop_type = "COLOR", page = 2, col = 4, row = 6, decr = -1, incr = 1, min = 0, max = 255  },
 
 }
 local ui_lines = {}
@@ -259,7 +279,7 @@ end
 local function RGB_parts(color_str)
     -- color_str should be formatted as "#RRGGBB"
     local parts = {}
-    if color_str:sub(1, 1) == "#" and #color_str == 7 then
+    if color_str and color_str:sub(1, 1) == "#" and #color_str == 7 then
         parts["R"] = tonumber( "0x" .. color_str:sub(2, 3) )
         parts["G"] = tonumber( "0x" .. color_str:sub(4, 5) )
         parts["B"] = tonumber( "0x" .. color_str:sub(6, 7) )
@@ -283,16 +303,16 @@ local function update_subprop_colors(color_val, sub_color_val, state)
     if state then
         if state.subprop_type and state.subprop_type == "COLOR" then
             local hex_subcolor = string.format("%02X",sub_color_val)
-            log("hex subcolor:: " .. state.subprop .. ": " .. hex_subcolor)
+            -- log("hex subcolor:: " .. state.subprop .. ": " .. hex_subcolor)
             if state.subprop == "R" then
                 final_color = "#" .. hex_subcolor .. final_color:sub(4,7)
-                log("final color (change red: ): " .. final_color)
+                -- log("final color (change red: ): " .. final_color)
             elseif state.subprop == "G" then
                 final_color = "#" .. final_color:sub(2,3) .. hex_subcolor .. final_color:sub(6,7)
-                log("final color (change green: ): " .. final_color)
+                -- log("final color (change green: ): " .. final_color)
             elseif state.subprop == "B" then
                 final_color = "#" .. final_color:sub(2,5) .. hex_subcolor
-                log("final color (change blue: ): " .. final_color)
+                -- log("final color (change blue: ): " .. final_color)
             end
         end
     end
@@ -712,6 +732,9 @@ local function init_away_team_kits(ctx, team_id)
                 local radar_flag = i==1 and 1 or nil
                 ctx.kits.set(team_id, i-1, cfg, radar_flag, 1)
                 away_loaded_for[i-1] = i
+                --
+                KitConfigEditor_get_settings(team_id, ki[1], cfg)
+                --
             end
         end
         away_next_kit = 1
@@ -722,6 +745,9 @@ local function init_away_team_kits(ctx, team_id)
         update_gk_kit_config(team_id, 1, ki[1], cfg)
         ctx.kits.set_gk(team_id, cfg)
         away_gk_loaded_for[0] = 1
+        --
+        KitConfigEditor_get_settings(team_id, ki[1], cfg)
+        --
         away_next_gk_kit = 1
     end
 end
@@ -997,7 +1023,7 @@ function m.key_down(ctx, vkey)
             end
         end
     elseif config_editor_on and vkey == NEXT_PROP_KEY then
-        if overlay_curr < #overlay_states then
+        if overlay_curr < #overlay_states and overlay_states[overlay_curr].page == overlay_states[overlay_curr+1].page then
             overlay_curr = overlay_curr + 1
 
             -- could this be somehow shortened? easier way to get team_id and curr for the final build_grid_menu(team_id, curr[1]) call?
@@ -1013,7 +1039,7 @@ function m.key_down(ctx, vkey)
             end
         end
     elseif config_editor_on and vkey == PREV_PROP_KEY then
-        if overlay_curr > 1 then
+        if overlay_curr > 1 and overlay_states[overlay_curr].page == overlay_states[overlay_curr-1].page then
             overlay_curr = overlay_curr - 1
 
             -- could this be somehow shortened? easier way to get team_id and curr for the final build_grid_menu(team_id, curr[1]) call?
@@ -1037,7 +1063,7 @@ function m.key_down(ctx, vkey)
         local update = is_gk and update_gk_kit_config or update_kit_config
         if kit_ord then
             local curr = kits[kit_ord]
-            log(string.format("curr: %s, %s", curr[1], t2s(curr[2])))
+            -- log(string.format("curr: %s, %s", curr[1], t2s(curr[2])))
             local team_id = ctx.kits.get_current_team(0)
             if s.incr ~= nil and team_id then
                 if s.subprop and s.subprop_type == "COLOR" then
@@ -1059,10 +1085,10 @@ function m.key_down(ctx, vkey)
                 build_grid_menu(team_id, curr[1])
             elseif s.nextf ~= nil and team_id then
                 local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
-                log("curr_disp_val: " .. curr_disp_val)
-                local disp_val, conf_val = s.nextf(s.keys, s.vals, curr_disp_val) -- perhaps 3rd parameter (current position?) seems to be restarting from 1 in new session, for scales with more values (gets noticeable with 3+ possible values)
-                log("disp_val (next): " .. disp_val .. " conf_val (next): " .. conf_val)
-                configEd_settings[team_id][curr[1]][s.prop] = conf_val    -- s.nextf(configEd_settings[team_id][curr[1]][s.prop])
+                -- log("curr_disp_val: " .. curr_disp_val)
+                local disp_val, conf_val = s.nextf(s.keys, s.vals, curr_disp_val)
+                -- log("disp_val (next): " .. disp_val .. " conf_val (next): " .. conf_val)
+                configEd_settings[team_id][curr[1]][s.prop] = conf_val
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
@@ -1078,7 +1104,7 @@ function m.key_down(ctx, vkey)
         local update = is_gk and update_gk_kit_config or update_kit_config
         if kit_ord then
             local curr = kits[kit_ord]
-            log(string.format("curr: %s, %s", curr[1], t2s(curr[2])))
+            -- log(string.format("curr: %s, %s", curr[1], t2s(curr[2])))
             local team_id = ctx.kits.get_current_team(0)
             if s.decr ~= nil and team_id then
                 -- configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
@@ -1087,9 +1113,9 @@ function m.key_down(ctx, vkey)
                     -- extract current sub-color from color string
                     local subprop_colors = get_subprop_colors(curr_color, s)
                     local curr_sub_color = subprop_colors[s.subprop] -- s.subprop used as key is either "R" or "G" or "B"
-                    -- increase current sub-color
+                    -- decrease current sub-color
                     curr_sub_color = math.max(s.min, curr_sub_color + s.decr)
-                    -- combine increased sub-color with other two color parts
+                    -- combine decreased sub-color with other two color parts
                     local new_color = update_subprop_colors(curr_color, curr_sub_color, s)
                     configEd_settings[team_id][curr[1]][s.prop] = new_color
                 else
@@ -1101,10 +1127,10 @@ function m.key_down(ctx, vkey)
                 build_grid_menu(team_id, curr[1])
             elseif s.prevf ~= nil and team_id then
                 local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
-                log("curr_disp_val: " .. curr_disp_val)
-                local disp_val, conf_val = s.prevf(s.keys, s.vals, curr_disp_val) -- perhaps 3rd parameter (current position?) seems to be restarting from 1 in new session, for scales with more values (gets noticeable with 3+ possible values)
-                log("disp_val (prev): " .. disp_val .. " conf_val (prev): " .. conf_val)
-                configEd_settings[team_id][curr[1]][s.prop] = conf_val    -- s.prevf(configEd_settings[team_id][curr[1]][s.prop])
+                -- log("curr_disp_val: " .. curr_disp_val)
+                local disp_val, conf_val = s.prevf(s.keys, s.vals, curr_disp_val)
+                -- log("disp_val (prev): " .. disp_val .. " conf_val (prev): " .. conf_val)
+                configEd_settings[team_id][curr[1]][s.prop] = conf_val
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, true)
@@ -1112,10 +1138,8 @@ function m.key_down(ctx, vkey)
             end
         end
     elseif config_editor_on and vkey == SWITCH_MENU_PAGE then
-        overlay_page = overlay_page + 1
-        if overlay_page > grid_menu_pages then
-            overlay_page = 1
-        end
+        overlay_page = (overlay_page % grid_menu_pages) + 1
+
         overlay_curr = first_overlay_state_on_page(overlay_page)
         if not overlay_curr then
             overlay_curr = 1
@@ -1200,13 +1224,12 @@ local function get_configEd_overlay_states(ctx)
 
         -- ADDED TO RESPOND TO UP/DOWN movements in Strip menu - to update overlay
         local cfg = table_copy(curr[2])
-        KitConfigEditor_get_settings(team_id, curr[1], cfg) -- get current kit data for configEd overlay - may be called way too often, but for the moment, I don't know how to reliably call this only once, when user goes one choice up/down in Strip menu
+        -- KitConfigEditor_get_settings(team_id, curr[1], cfg) -- get current kit data for configEd overlay - may be called way too often, but for the moment, I don't know how to reliably call this only once, when user goes one choice up/down in Strip menu
+        -- previous line MOVED TO new "set_home_team_for_kits" event - seems like a perfect place to make ONLY ONE update of displayed menu values, exactly when user goes up/down in "Strip" menu :)
         build_grid_menu(team_id, curr[1], cfg) -- optional 3rd parameter used here
         -- .. HOPEFULLY, it won't cause troubles elsewhere
 
-        -- do something with grid_menu to convert it to ui_lines, if necessary
         ui_lines = {}
-        -- for i, row in pairs(grid_menu) do
         for i, row in pairs(grid_menu[overlay_page]) do
             table.insert(ui_lines, tableLength(ui_lines)+1, "\n" .. table.concat(row))
             -- log("row: " .. table.concat(row))
@@ -1214,9 +1237,9 @@ local function get_configEd_overlay_states(ctx)
 
         return string.format([[
 
-     Kit Config live editor (for now, home team only, chest numbers)
+     Kit Config live editor - Menu page %d of %d
      Keys: [PgUp][PgDn] - choose setting, [-][+] - modify value
-     %s]], table.concat(ui_lines))
+     %s]], overlay_page, grid_menu_pages, table.concat(ui_lines))
 
     else
         -- log("In get_overlay_states: configEd_settings is nul or empty!! ")
