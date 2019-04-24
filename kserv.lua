@@ -695,7 +695,7 @@ local function reset_match(ctx)
     prep_away_team(ctx)
 end
 
-local function init_home_team_kits(ctx, team_id, set_shirt_colors)
+local function init_home_team_kits(ctx, team_id, skip_shirt_colors)
     if home_kits and #home_kits>0 then
         for i,ki in ipairs(home_kits) do
             local org_cfg = ctx.kits.get(team_id, i-1)
@@ -703,9 +703,8 @@ local function init_home_team_kits(ctx, team_id, set_shirt_colors)
             if org_cfg then -- check if we can go this far in list of kits
                 local cfg = table_copy(ki[2])
                 update_kit_config(team_id, i, ki[1], cfg)
-                local radar_flag = i==1 and 0 or nil
-                local shirt_colors_flag = set_shirt_colors and 0 or nil
-                ctx.kits.set(team_id, i-1, cfg, radar_flag, shirt_colors_flag)
+                local radar_flag = (not skip_shirt_colors) and 0 or nil
+                ctx.kits.set(team_id, i-1, cfg, radar_flag)
                 home_loaded_for[i-1] = i
             end
         end
@@ -729,8 +728,7 @@ local function init_away_team_kits(ctx, team_id)
             if org_cfg then -- check if we can go this far in list of kits
                 local cfg = table_copy(ki[2])
                 update_kit_config(team_id, i, ki[1], cfg)
-                local radar_flag = i==1 and 1 or nil
-                ctx.kits.set(team_id, i-1, cfg, radar_flag, 1)
+                ctx.kits.set(team_id, i-1, cfg, 1)
                 away_loaded_for[i-1] = i
                 --
                 KitConfigEditor_get_settings(team_id, ki[1], cfg)
@@ -770,7 +768,8 @@ function m.set_home_team_for_kits(ctx, team_id, edit_mode)
         config_editor_on = false
 
         -- apply GDB kits for the team
-        init_home_team_kits(ctx, team_id, false)
+        local skip_shirt_colors = true
+        init_home_team_kits(ctx, team_id, skip_shirt_colors)
     end
 end
 
@@ -955,8 +954,8 @@ function m.key_down(ctx, vkey)
                 -- trigger refresh
                 local kit_id = ctx.kits.get_current_kit_id(0)
                 home_loaded_for[kit_id] = home_next_kit
-                local shirt_colors_flag = (not is_edit_mode(ctx)) and 0 or nil
-                ctx.kits.set(ctx.home_team, kit_id, cfg, 0, shirt_colors_flag)
+                local radar_flag = (not is_edit_mode(ctx)) and 0 or nil
+                ctx.kits.set(ctx.home_team, kit_id, cfg, radar_flag)
                 ctx.kits.refresh(0)
                 p_home = curr
             end
@@ -1001,7 +1000,7 @@ function m.key_down(ctx, vkey)
                 update_kit_config(ctx.away_team, away_next_kit, curr[1], cfg)
                 -- trigger refresh
                 local kit_id = ctx.kits.get_current_kit_id(1)
-                ctx.kits.set(ctx.away_team, kit_id, cfg, 1, 1)
+                ctx.kits.set(ctx.away_team, kit_id, cfg, 1)
                 ctx.kits.refresh(1)
                 p_away = curr
             end
