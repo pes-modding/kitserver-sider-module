@@ -695,7 +695,7 @@ local function reset_match(ctx)
     prep_away_team(ctx)
 end
 
-local function init_home_team_kits(ctx, team_id, skip_shirt_colors)
+local function init_home_team_kits(ctx, team_id, skip_shirt_colors, init_config_editor)
     if home_kits and #home_kits>0 then
         for i,ki in ipairs(home_kits) do
             local org_cfg = ctx.kits.get(team_id, i-1)
@@ -706,6 +706,11 @@ local function init_home_team_kits(ctx, team_id, skip_shirt_colors)
                 local radar_flag = (not skip_shirt_colors) and 0 or nil
                 ctx.kits.set(team_id, i-1, cfg, radar_flag)
                 home_loaded_for[i-1] = i
+                if init_config_editor then
+                    --
+                    KitConfigEditor_get_settings(team_id, ki[1], cfg)
+                    --
+                end
             end
         end
         home_next_kit = 1
@@ -716,6 +721,11 @@ local function init_home_team_kits(ctx, team_id, skip_shirt_colors)
         update_gk_kit_config(team_id, 1, ki[1], cfg)
         ctx.kits.set_gk(team_id, cfg)
         home_gk_loaded_for[0] = 1
+        if init_config_editor then
+            --
+            KitConfigEditor_get_settings(team_id, ki[1], cfg)
+            --
+        end
         home_next_gk_kit = 1
     end
 end
@@ -730,9 +740,6 @@ local function init_away_team_kits(ctx, team_id)
                 update_kit_config(team_id, i, ki[1], cfg)
                 ctx.kits.set(team_id, i-1, cfg, 1)
                 away_loaded_for[i-1] = i
-                --
-                KitConfigEditor_get_settings(team_id, ki[1], cfg)
-                --
             end
         end
         away_next_kit = 1
@@ -743,9 +750,6 @@ local function init_away_team_kits(ctx, team_id)
         update_gk_kit_config(team_id, 1, ki[1], cfg)
         ctx.kits.set_gk(team_id, cfg)
         away_gk_loaded_for[0] = 1
-        --
-        KitConfigEditor_get_settings(team_id, ki[1], cfg)
-        --
         away_next_gk_kit = 1
     end
 end
@@ -769,7 +773,8 @@ function m.set_home_team_for_kits(ctx, team_id, edit_mode)
 
         -- apply GDB kits for the team
         local skip_shirt_colors = true
-        init_home_team_kits(ctx, team_id, skip_shirt_colors)
+        local init_config_editor = true
+        init_home_team_kits(ctx, team_id, skip_shirt_colors, init_config_editor)
     end
 end
 
