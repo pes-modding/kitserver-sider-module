@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.8"
+m.version = "1.9"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -25,6 +25,8 @@ local home_loaded_for = {}
 local home_gk_loaded_for = {}
 local away_loaded_for = {}
 local away_gk_loaded_for = {}
+local was_p_home
+local was_p_away
 
 local config_editor_on
 
@@ -33,12 +35,6 @@ local _team_id
 local _kit_id
 local _is_gk
 local curr_col
-
--- final selections
-local p_home
-local p_away
-local g_home
-local g_away
 
 local ks_player_formats = {
     KitFile = "k%dp%d",
@@ -687,8 +683,8 @@ local function reset_match(ctx)
     away_loaded_for = {}
     away_gk_loaded_for = {}
 
-    p_home, p_away = nil, nil
-    g_home, g_away = nil, nil
+    was_p_home = nil
+    was_p_away = nil
     is_gk_mode = false -- always start in Players mode
 
     prep_home_team(ctx)
@@ -786,18 +782,9 @@ function m.set_kits(ctx, home_info, away_info)
 
     if home_kits and #home_kits > 0 then
         home_next_kit = ctx.kits.get_current_kit_id(0) + 1
-        p_home = get_curr_kit(ctx, ctx.home_team, 0)
     end
     if away_kits and #away_kits > 0 then
         away_next_kit = ctx.kits.get_current_kit_id(1) + 1
-        p_away = get_curr_kit(ctx, ctx.away_team, 1)
-    end
-
-    if home_gk_kits and #home_gk_kits>0 then
-        g_home = get_curr_gk_kit(ctx, ctx.home_team)
-    end
-    if away_gk_kits and #away_gk_kits>0 then
-        g_away = get_curr_gk_kit(ctx, ctx.away_team)
     end
 end
 
@@ -878,67 +865,89 @@ function m.key_down(ctx, vkey)
     elseif not is_edit_mode(ctx) and vkey == 0x39 then -- player/goalkeeper mode toggle
         if is_gk_mode then
             -- try to switch to players mode
-            g_home = home_gk_kits and home_gk_kits[home_next_gk_kit]
-            g_away = away_gk_kits and away_gk_kits[away_next_gk_kit]
-
             -- home: update cfg
-            local curr = p_home
-            log(string.format("p_home: %s", curr))
-            if curr and curr[2] then
-                local cfg = table_copy(curr[2])
-                update_kit_config(ctx.home_team, home_next_kit, curr[1], cfg)
-                -- trigger refresh
-                local home_kit_id = ctx.kits.get_current_kit_id(0)
-                ctx.kits.set(ctx.home_team, home_kit_id, cfg, 0)
+            local switched_home
+            local home_kit_id = ctx.kits.get_current_kit_id(0)
+            if home_kits and #home_kits > 0 then
+                local idx = home_loaded_for[home_kit_id]
+                local curr = idx and home_kits[idx] or nil
+                log(string.format("PL home: %s", curr))
+                if curr and curr[2] then
+                    local cfg = table_copy(curr[2])
+                    update_kit_config(ctx.home_team, idx, curr[1], cfg)
+                    -- trigger refresh
+                    ctx.kits.set(ctx.home_team, home_kit_id, cfg, 0)
+                    ctx.kits.refresh(0)
+                    is_gk_mode = false
+                    switched_home = true
+                end
+            end
+            if not switched_home and was_p_home then
+                -- fallback when we didn't have a player GDB kit
+                ctx.kits.set(ctx.home_team, home_kit_id, was_p_home, 0)
                 ctx.kits.refresh(0)
                 is_gk_mode = false
             end
             -- away: update cfg
-            local curr = p_away
-            log(string.format("p_away: %s", curr))
-            if curr and curr[2] then
-                local cfg = table_copy(curr[2])
-                update_kit_config(ctx.away_team, away_next_kit, curr[1], cfg)
-                -- trigger refresh
-                local away_kit_id = ctx.kits.get_current_kit_id(1)
-                ctx.kits.set(ctx.away_team, away_kit_id, cfg, 1)
+            local switched_away
+            local away_kit_id = ctx.kits.get_current_kit_id(1)
+            if away_kits and #away_kits > 0 then
+                local idx = away_loaded_for[away_kit_id]
+                local curr = idx and away_kits[idx] or nil
+                log(string.format("PL away: %s", curr))
+                if curr and curr[2] then
+                    local cfg = table_copy(curr[2])
+                    update_kit_config(ctx.away_team, idx, curr[1], cfg)
+                    -- trigger refresh
+                    ctx.kits.set(ctx.away_team, away_kit_id, cfg, 1)
+                    ctx.kits.refresh(1)
+                    is_gk_mode = false
+                    switched_away = true
+                end
+            end
+            if not switched_away and was_p_away then
+                -- fallback when we didn't have a player GDB kit
+                ctx.kits.set(ctx.away_team, away_kit_id, was_p_away, 1)
                 ctx.kits.refresh(1)
                 is_gk_mode = false
             end
         else
             -- try to switch to goalkeepers mode
-            p_home = home_kits and home_kits[home_next_kit]
-            p_away = away_kits and away_kits[away_next_kit]
-
             -- home: update cfg
-            local curr = g_home
-            log(string.format("g_home: %s", curr))
-            if curr and curr[2] then
-                -- we have a home GK kit
-                local cfg = table_copy(curr[2])
-                update_gk_kit_config(ctx.home_team, home_next_gk_kit, curr[1], cfg)
-                -- update kit
-                ctx.kits.set_gk(ctx.home_team, cfg)
-                -- trigger refresh
-                local home_kit_id = ctx.kits.get_current_kit_id(0)
-                ctx.kits.set(ctx.home_team, home_kit_id, cfg)
-                ctx.kits.refresh(0)
-                is_gk_mode = true
+            if home_gk_kits and #home_gk_kits > 0 then
+                local curr = home_gk_kits[home_next_gk_kit]
+                log(string.format("GK home: %s", curr))
+                if curr and curr[2] then
+                    -- we have a home GK kit
+                    local cfg = table_copy(curr[2])
+                    update_gk_kit_config(ctx.home_team, home_next_gk_kit, curr[1], cfg)
+                    -- update kit
+                    ctx.kits.set_gk(ctx.home_team, cfg)
+                    -- trigger refresh
+                    local home_kit_id = ctx.kits.get_current_kit_id(0)
+                    was_p_home = ctx.kits.get(ctx.home_team, home_kit_id)
+                    ctx.kits.set(ctx.home_team, home_kit_id, cfg)
+                    ctx.kits.refresh(0)
+                    is_gk_mode = true
+                end
             end
             -- away: update cfg
-            local curr = g_away
-            log(string.format("g_away: %s", curr))
-            if curr and curr[2] then
-                -- we have an away GK kit
-                local cfg = table_copy(curr[2])
-                update_gk_kit_config(ctx.away_team, away_next_gk_kit, curr[1], cfg)
-                -- update kit
-                ctx.kits.set_gk(ctx.away_team, cfg)
-                -- trigger refresh
-                local away_kit_id = ctx.kits.get_current_kit_id(1)
-                ctx.kits.set(ctx.away_team, away_kit_id, cfg)
-                ctx.kits.refresh(1)
-                is_gk_mode = true
+            if away_gk_kits and #away_gk_kits > 0 then
+                local curr = away_gk_kits[away_next_gk_kit]
+                log(string.format("GK away: %s", curr))
+                if curr and curr[2] then
+                    -- we have an away GK kit
+                    local cfg = table_copy(curr[2])
+                    update_gk_kit_config(ctx.away_team, away_next_gk_kit, curr[1], cfg)
+                    -- update kit
+                    ctx.kits.set_gk(ctx.away_team, cfg)
+                    -- trigger refresh
+                    local away_kit_id = ctx.kits.get_current_kit_id(1)
+                    was_p_away = ctx.kits.get(ctx.away_team, away_kit_id)
+                    ctx.kits.set(ctx.away_team, away_kit_id, cfg)
+                    ctx.kits.refresh(1)
+                    is_gk_mode = true
+                end
             end
         end
 
@@ -962,7 +971,6 @@ function m.key_down(ctx, vkey)
                 local radar_flag = (not is_edit_mode(ctx)) and 0 or nil
                 ctx.kits.set(ctx.home_team, kit_id, cfg, radar_flag)
                 ctx.kits.refresh(0)
-                p_home = curr
             end
         else
             -- goalkeepers
@@ -986,7 +994,6 @@ function m.key_down(ctx, vkey)
                     ctx.kits.set(ctx.home_team, kit_id, cfg)
                 end
                 ctx.kits.refresh(0)
-                g_home = curr
             end
         end
     elseif not is_edit_mode(ctx) and vkey == 0x37 then -- next away kit
@@ -1005,9 +1012,9 @@ function m.key_down(ctx, vkey)
                 update_kit_config(ctx.away_team, away_next_kit, curr[1], cfg)
                 -- trigger refresh
                 local kit_id = ctx.kits.get_current_kit_id(1)
+                away_loaded_for[kit_id] = away_next_kit
                 ctx.kits.set(ctx.away_team, kit_id, cfg, 1)
                 ctx.kits.refresh(1)
-                p_away = curr
             end
         else
             -- goalkeepers
@@ -1021,9 +1028,9 @@ function m.key_down(ctx, vkey)
                 update_gk_kit_config(ctx.away_team, away_next_gk_kit, curr[1], cfg)
                 -- trigger refresh
                 local kit_id = ctx.kits.get_current_kit_id(1)
+                away_gk_loaded_for[0] = away_next_gk_kit
                 ctx.kits.set(ctx.away_team, kit_id, cfg)
                 ctx.kits.refresh(1)
-                g_away = curr
             end
         end
     elseif config_editor_on and vkey == NEXT_PROP_KEY then
@@ -1154,35 +1161,55 @@ end
 function m.finalize_kits(ctx)
     log("finalizing kits ...")
     is_gk_mode = false
-    if home_kits and #home_kits > 0 then
-        local curr = g_home
+    -- goalkeepers
+    if home_gk_kits and #home_gk_kits > 0 then
+        local curr = home_gk_kits[home_next_gk_kit]
         if curr then
             local cfg = table_copy(curr[2])
             update_gk_kit_config(ctx.home_team, home_next_gk_kit, curr[1], cfg)
             ctx.kits.set_gk(ctx.home_team, cfg)
         end
-        local curr = p_home
-        if curr then
-            local kit_id = ctx.kits.get_current_kit_id(0)
-            local cfg = table_copy(curr[2])
-            update_kit_config(ctx.home_team, home_next_kit, curr[1], cfg)
-            ctx.kits.set(ctx.home_team, kit_id, cfg, 0)
-        end
     end
-    if away_kits and #away_kits > 0 then
-        local curr = g_away
+    if away_gk_kits and #away_gk_kits > 0 then
+        local curr = away_gk_kits[away_next_gk_kit]
         if curr then
             local cfg = table_copy(curr[2])
             update_gk_kit_config(ctx.away_team, away_next_gk_kit, curr[1], cfg)
             ctx.kits.set_gk(ctx.away_team, cfg)
         end
-        local curr = p_away
+    end
+    -- players
+    local set_home
+    local kit_id = ctx.kits.get_current_kit_id(0)
+    if home_kits and #home_kits > 0 then
+        local idx = home_loaded_for[kit_id]
+        local curr = idx and home_kits[idx] or nil
         if curr then
-            local kit_id = ctx.kits.get_current_kit_id(1)
             local cfg = table_copy(curr[2])
-            update_kit_config(ctx.away_team, away_next_kit, curr[1], cfg)
-            ctx.kits.set(ctx.away_team, kit_id, cfg, 1)
+            update_kit_config(ctx.home_team, idx, curr[1], cfg)
+            ctx.kits.set(ctx.home_team, kit_id, cfg, 0)
+            set_home = true
         end
+    end
+    if not set_home and was_p_home then
+        -- fallback
+        ctx.kits.set(ctx.home_team, kit_id, was_p_home, 0)
+    end
+    local set_away
+    local kit_id = ctx.kits.get_current_kit_id(1)
+    if away_kits and #away_kits > 0 then
+        local idx = away_loaded_for[kit_id]
+        local curr = idx and away_kits[idx] or nil
+        if curr then
+            local cfg = table_copy(curr[2])
+            update_kit_config(ctx.away_team, idx, curr[1], cfg)
+            ctx.kits.set(ctx.away_team, kit_id, cfg, 1)
+            set_away = true
+        end
+    end
+    if not set_away and was_p_away then
+        -- fallback
+        ctx.kits.set(ctx.away_team, kit_id, was_p_away, 1)
     end
 end
 
