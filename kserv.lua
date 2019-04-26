@@ -171,7 +171,7 @@ local overlay_states = {
     { ui = "Chest number y: %d", prop = "ChestNumberY", page = 1, col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 7  },
 
     { ui = "Shorts model: %d", prop = "ShortsModel", page = 1, col = 2, row = 4, decr = -1, incr = 1, min = 0, max = 17  },
-    { ui = "Shorts number size: %d", prop = "ShortsNumberSize", page = 1, col = 2, row = 5, decr = -1, incr = 1, min = 0, max = 15  },
+    { ui = "Shorts number size: %d", prop = "ShortsNumberSize", page = 1, col = 2, row = 5, decr = -1, incr = 1, min = 0, max = 31  },
     { ui = "Shorts number x: %d", prop = "ShortsNumberX", page = 1, col = 2, row = 6, decr = -1, incr = 1, min = 0, max = 14  },
     { ui = "Shorts number y: %d", prop = "ShortsNumberY", page = 1, col = 2, row = 7, decr = -1, incr = 1, min = 0, max = 15  },
     { ui = "Shorts number side: %s", prop = "ShortsNumberSide", page = 1, col = 2, row = 8,
