@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9"
+m.version = "1.9b"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -166,12 +166,12 @@ local overlay_states = {
         prevf = rot_right,
     },
 
-    { ui = "Chest number size: %d", prop = "ChestNumberSize", page = 1, col = 2, row = 1, decr = -1, incr = 1, min = 0, max = 31 },
-    { ui = "Chest number x: %d", prop = "ChestNumberX", page = 1, col = 2, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
-    { ui = "Chest number y: %d", prop = "ChestNumberY", page = 1, col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 7  },
+    { ui = "Chest number size: %d", prop = "ChestNumberSize", page = 1, col = 2, row = 1, decr = -1, incr = 1, min = 0, max = 28 },
+    { ui = "Chest number x: %d", prop = "ChestNumberX", page = 1, col = 2, row = 2, decr = -1, incr = 1, min = 0, max = 29  },
+    { ui = "Chest number y: %d", prop = "ChestNumberY", page = 1, col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 6  },
 
     { ui = "Shorts model: %d", prop = "ShortsModel", page = 1, col = 2, row = 4, decr = -1, incr = 1, min = 0, max = 17  },
-    { ui = "Shorts number size: %d", prop = "ShortsNumberSize", page = 1, col = 2, row = 5, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Shorts number size: %d", prop = "ShortsNumberSize", page = 1, col = 2, row = 5, decr = -1, incr = 1, min = 0, max = 28  },
     { ui = "Shorts number x: %d", prop = "ShortsNumberX", page = 1, col = 2, row = 6, decr = -1, incr = 1, min = 0, max = 14  },
     { ui = "Shorts number y: %d", prop = "ShortsNumberY", page = 1, col = 2, row = 7, decr = -1, incr = 1, min = 0, max = 15  },
     { ui = "Shorts number side: %s", prop = "ShortsNumberSide", page = 1, col = 2, row = 8,
@@ -190,8 +190,8 @@ local overlay_states = {
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Name y: %d", prop = "NameY", page = 1, col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 17  },
-    { ui = "Name size: %d", prop = "NameSize", page = 1, col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Name y: %d", prop = "NameY", page = 1, col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 16  },
+    { ui = "Name size: %d", prop = "NameSize", page = 1, col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 20  },
     { ui = "Back number size: %d", prop = "BackNumberSize", page = 1, col = 3, row = 5, decr = -1, incr = 1, min = 0, max = 31 },
     { ui = "Back number y: %d", prop = "BackNumberY", page = 1, col = 3, row = 6, decr = -1, incr = 1, min = 0, max = 29  },
     { ui = "Back number spacing: %d", prop = "BackNumberSpacing", page = 1, col = 3, row = 7, decr = -1, incr = 1, min = 0, max = 3  },
