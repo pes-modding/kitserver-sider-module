@@ -3,10 +3,11 @@
 
 local m = {}
 
-m.version = "1.9b"
+m.version = "1.9c"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
+local compmap
 
 local home_kits
 local away_kits
@@ -438,6 +439,22 @@ local function load_map(filename)
     return map
 end
 
+local function load_compmap(filename)
+    local map = {}
+    for line in io.lines(filename) do
+        -- strip comment
+        line = string.gsub(line, "#.*", "")
+        -- allow only ONE word - alphanumerics, underscore and hyphen -- is there better pattern to do that?
+        local tid, path = string.match(line, "%s*(%d+)%s*,%s*([%w_-]*)%s*")
+        tid = tonumber(tid)
+        if tid and path then
+            map[tid] = path
+            log(string.format("comp id: %d ==> content prefix: %s", tid, path))
+        end
+    end
+    return map
+end
+
 local function load_config(filename)
     local cfg = {}
     local cfg_org = {}
@@ -532,8 +549,13 @@ local function apply_changes(team_id, ki, cfg, save_to_disk)
     save_config(filename, ki[2], ki[3])
 end
 
-local function load_configs_for_team(team_id)
+local function load_configs_for_team(ctx, team_id)
+    -- ctx added for comp_id retrieval
     local path = kmap[team_id]
+
+    local comp_id = ctx.tournament_id and ctx.tournament_id or nil
+    local comp_prefix = compmap[comp_id]
+
     if not path then
         -- no kits for this team
         log(string.format("no kitserver kits for: %s", team_id))
@@ -542,35 +564,54 @@ local function load_configs_for_team(team_id)
     log(string.format("looking for configs for: %s", path))
     -- players
     local pt = {}
-    local f = io.open(kroot .. path .. "\\order.txt")
-    if f then
-        f:close()
-        for line in io.lines(kroot .. path .. "\\order.txt") do
-            line = string.gsub(line, "^\xef\xbb\xbf", "")
-            line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
-            local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-            local cfg, cfg_org = load_config(filename)
-            if cfg then
-                pt[#pt + 1] = { line, cfg, cfg_org }
-            else
-                log("WARNING: unable to load kit config from: " .. filename)
+
+    local order_files = {"\\order.txt" } -- two elements max. - either specific order file for current competition or generic order.txt
+    if comp_prefix then
+        table.insert(order_files, 1, string.format("\\%s_order.txt", comp_prefix)) -- competition-specific order file gets priority over generic one ...
+    end
+    log("Player order.txt files: " .. t2s(order_files))
+    for i, order_file in pairs(order_files) do -- if competition-specific order file exists, use its entries, otherwise fall back to generic order.txt
+        -- local f = io.open(kroot .. path .. "\\order.txt")
+        local f = io.open(kroot .. path .. order_file)
+        if f then
+            f:close()
+            -- for line in io.lines(kroot .. path .. "\\order.txt") do
+            for line in io.lines(kroot .. path .. order_file) do
+                line = string.gsub(line, "^\xef\xbb\xbf", "")
+                line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
+                local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
+                local cfg, cfg_org = load_config(filename)
+                if cfg then
+                    pt[#pt + 1] = { line, cfg, cfg_org }
+                else
+                    log("WARNING: unable to load kit config from: " .. filename)
+                end
             end
         end
     end
     -- goalkeepers
     local gt = {}
-    local f = io.open(kroot .. path .. "\\gk_order.txt")
-    if f then
-        f:close()
-        for line in io.lines(kroot .. path .. "\\gk_order.txt") do
-            line = string.gsub(line, "^\xef\xbb\xbf", "")
-            line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
-            local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-            local cfg, cfg_org = load_config(filename)
-            if cfg then
-                gt[#gt + 1] = { line, cfg, cfg_org }
-            else
-                log("WARNING: unable to load GK kit config from: " .. filename)
+
+    local gk_order_files = {"\\gk_order.txt" } -- two elements max. - either specific gk_order file for current competition or generic gk_order.txt
+    if comp_prefix then
+        table.insert(gk_order_files, 1, string.format("\\%s_gk_order.txt", comp_prefix)) -- competition-specific gk_order file gets priority over generic one ...
+    end
+    log("GK order.txt files: " .. t2s(gk_order_files))
+    for i, gk_order_file in pairs(gk_order_files) do -- if competition-specific gk_order file exists, use its entries, otherwise fall back to generic gk_order.txt
+        local f = io.open(kroot .. path .. gk_order_file)
+        if f then
+            f:close()
+            -- for line in io.lines(kroot .. path .. "\\gk_order.txt") do
+            for line in io.lines(kroot .. path .. gk_order_file) do
+                line = string.gsub(line, "^\xef\xbb\xbf", "")
+                line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
+                local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
+                local cfg, cfg_org = load_config(filename)
+                if cfg then
+                    gt[#gt + 1] = { line, cfg, cfg_org }
+                else
+                    log("WARNING: unable to load GK kit config from: " .. filename)
+                end
             end
         end
     end
@@ -606,7 +647,7 @@ end
 
 local function prep_home_team(ctx)
     -- see what kits are available
-    home_kits, home_gk_kits = load_configs_for_team(ctx.home_team)
+    home_kits, home_gk_kits = load_configs_for_team(ctx, ctx.home_team)
     home_next_kit = home_kits and #home_kits>0 and 0 or nil
     home_next_gk_kit = home_gk_kits and #home_gk_kits>0 and 0 or nil
     log(string.format("prepped home kits for: %s", ctx.home_team))
@@ -614,7 +655,7 @@ end
 
 local function prep_away_team(ctx)
     -- see what kits are available
-    away_kits, away_gk_kits = load_configs_for_team(ctx.away_team)
+    away_kits, away_gk_kits = load_configs_for_team(ctx, ctx.away_team)
     away_next_kit = away_kits and #away_kits>0 and 0 or nil
     away_next_gk_kit = away_gk_kits and #away_gk_kits>0 and 0 or nil
     log(string.format("prepped away kits for: %s", ctx.away_team))
@@ -833,6 +874,8 @@ function m.key_down(ctx, vkey)
     if vkey == 0x30 then
         kmap = load_map(kroot .. "\\map.txt")
         log("Reloaded map from: " .. kroot .. "\\map.txt")
+        compmap = load_compmap(kroot .. "\\map_comp.txt")
+        log("Reloaded competition map from: " .. kroot .. "\\map_comp.txt")
 
     elseif vkey == 0x32 then
         if is_edit_mode(ctx) then
@@ -1300,6 +1343,7 @@ function m.init(ctx)
         kroot = ctx.sider_dir .. kroot
     end
     kmap = load_map(kroot .. "\\map.txt")
+    compmap = load_compmap(kroot .. "\\map_comp.txt")
     ctx.register("overlay_on", m.overlay_on)
     ctx.register("key_down", m.key_down)
     ctx.register("key_up", m.key_up)
