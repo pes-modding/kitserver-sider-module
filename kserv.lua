@@ -588,6 +588,9 @@ local function load_configs_for_team(ctx, team_id)
                 end
             end
         end
+        if #pt > 0 then -- we have loaded compsetition-specific configs, skip regular ones
+            break
+        end
     end
     -- goalkeepers
     local gt = {}
@@ -613,6 +616,9 @@ local function load_configs_for_team(ctx, team_id)
                     log("WARNING: unable to load GK kit config from: " .. filename)
                 end
             end
+        end
+        if #gt > 0 then -- we have loaded compsetition-specific GK configs, skip regular ones
+            break
         end
     end
     return pt, gt
