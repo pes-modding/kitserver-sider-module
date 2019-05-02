@@ -549,6 +549,22 @@ local function apply_changes(team_id, ki, cfg, save_to_disk)
     save_config(filename, ki[2], ki[3])
 end
 
+local function get_all_order_files_for_team(path, is_gk)
+    local all_order_files = is_gk == true and {"\\gk_order.txt"} or {"\\order.txt"}  -- generic one is always assumed to be there ...
+    local inverted_compmap = tableInvert(compmap) -- eliminates duplicated prefix values as a side-effect (e.g. "ucl" remains only once), id's are actualy not needed here
+    -- log("compmap: " .. t2s(compmap))
+    -- log("inverted compmap: " .. t2s(tableInvert(compmap)))
+    for comp_prefix, comp_id in pairs(inverted_compmap) do
+        local order_file = string.format("\\%s_order.txt", string.format("%s%s", comp_prefix, is_gk == true and "_gk" or "") )
+        local f = io.open(kroot .. path .. order_file)
+        if f then
+            f:close()
+            table.insert(all_order_files, #all_order_files+1, order_file) -- append at the end of the table
+        end
+    end
+    return all_order_files
+end
+
 local function load_configs_for_team(ctx, team_id)
     -- ctx added for comp_id retrieval
     local path = kmap[team_id]
@@ -562,66 +578,123 @@ local function load_configs_for_team(ctx, team_id)
         return nil, nil
     end
     log(string.format("looking for configs for: %s", path))
-    -- players
-    local pt = {}
 
-    local order_files = {"\\order.txt" } -- two elements max. - either specific order file for current competition or generic order.txt
-    if comp_prefix then
-        table.insert(order_files, 1, string.format("\\%s_order.txt", comp_prefix)) -- competition-specific order file gets priority over generic one ...
-    end
-    log("Player order.txt files: " .. t2s(order_files))
-    for i, order_file in pairs(order_files) do -- if competition-specific order file exists, use its entries, otherwise fall back to generic order.txt
-        -- local f = io.open(kroot .. path .. "\\order.txt")
-        local f = io.open(kroot .. path .. order_file)
-        if f then
-            f:close()
-            -- for line in io.lines(kroot .. path .. "\\order.txt") do
-            for line in io.lines(kroot .. path .. order_file) do
-                line = string.gsub(line, "^\xef\xbb\xbf", "")
-                line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
-                local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-                local cfg, cfg_org = load_config(filename)
-                if cfg then
-                    pt[#pt + 1] = { line, cfg, cfg_org }
-                else
-                    log("WARNING: unable to load kit config from: " .. filename)
+    if is_edit_mode(ctx) then
+        -- in edit mode we have to be able to cycle through ALL kits - the ones from generic order.txt and from all the possible competition-specific .txt's
+        -- (e.g. for Liverpool - they could easily have at least two competition-specific kits - for UCL and FA cup)
+
+        -- players
+        local pt = {}
+        local order_files = get_all_order_files_for_team(path, false) -- is_gk = false, fetch players' kits
+        -- log("In edit mode:: all_order_files for players: " .. t2s(order_files))
+        for i, order_file in pairs(order_files) do -- if competition-specific order file exists, use its entries, otherwise fall back to generic order.txt in second iteration
+            local f = io.open(kroot .. path .. order_file)
+            if f then
+                f:close()
+                for line in io.lines(kroot .. path .. order_file) do
+                    line = string.gsub(line, "^\xef\xbb\xbf", "")
+                    line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
+                    local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
+                    local cfg, cfg_org = load_config(filename)
+                    if cfg then
+                        pt[#pt + 1] = { line, cfg, cfg_org }
+                    else
+                        log("WARNING: unable to load kit config from: " .. filename)
+                    end
                 end
             end
         end
-        if #pt > 0 then -- we have loaded compsetition-specific configs, skip regular ones
-            break
-        end
-    end
-    -- goalkeepers
-    local gt = {}
+        -- log("edit mode:: all player kits: " .. t2s(pt))
 
-    local gk_order_files = {"\\gk_order.txt" } -- two elements max. - either specific gk_order file for current competition or generic gk_order.txt
-    if comp_prefix then
-        table.insert(gk_order_files, 1, string.format("\\%s_gk_order.txt", comp_prefix)) -- competition-specific gk_order file gets priority over generic one ...
-    end
-    log("GK order.txt files: " .. t2s(gk_order_files))
-    for i, gk_order_file in pairs(gk_order_files) do -- if competition-specific gk_order file exists, use its entries, otherwise fall back to generic gk_order.txt
-        local f = io.open(kroot .. path .. gk_order_file)
-        if f then
-            f:close()
-            -- for line in io.lines(kroot .. path .. "\\gk_order.txt") do
-            for line in io.lines(kroot .. path .. gk_order_file) do
-                line = string.gsub(line, "^\xef\xbb\xbf", "")
-                line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
-                local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-                local cfg, cfg_org = load_config(filename)
-                if cfg then
-                    gt[#gt + 1] = { line, cfg, cfg_org }
-                else
-                    log("WARNING: unable to load GK kit config from: " .. filename)
+        -- goalkeepers
+        local gt = {}
+        local gk_order_files = get_all_order_files_for_team(path, true) -- is_gk = true, fetch keepers' kits
+        -- log("In edit mode:: all_order_files for keepers: " .. t2s(gk_order_files))
+        for i, gk_order_file in pairs(gk_order_files) do -- if competition-specific gk_order file exists, use its entries, otherwise fall back to generic gk_order.txt
+            local f = io.open(kroot .. path .. gk_order_file)
+            if f then
+                f:close()
+                for line in io.lines(kroot .. path .. gk_order_file) do
+                    line = string.gsub(line, "^\xef\xbb\xbf", "")
+                    line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
+                    local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
+                    local cfg, cfg_org = load_config(filename)
+                    if cfg then
+                        gt[#gt + 1] = { line, cfg, cfg_org }
+                    else
+                        log("WARNING: unable to load GK kit config from: " .. filename)
+                    end
                 end
             end
         end
-        if #gt > 0 then -- we have loaded compsetition-specific GK configs, skip regular ones
-            break
+        -- log("edit mode:: all gk kits: " .. t2s(gt))
+
+        return pt, gt
+    else -- pre-match menus? hopefully, this is reliable enough
+        -- only two possible order files - either generic one or the competition specific one (determined by comp_id)
+
+        -- players
+        local pt = {}
+
+        local order_files = {"\\order.txt" } -- two elements max. - either specific order file for current competition or generic order.txt
+        if comp_prefix then
+            table.insert(order_files, 1, string.format("\\%s_order.txt", comp_prefix)) -- competition-specific order file appears before the generic one ...
         end
+        -- log("Player order.txt files: " .. t2s(order_files))
+        for i, order_file in pairs(order_files) do -- if competition-specific order file exists, use its entries, otherwise fall back to generic order.txt in second iteration
+            local f = io.open(kroot .. path .. order_file)
+            if f then
+                f:close()
+                for line in io.lines(kroot .. path .. order_file) do
+                    line = string.gsub(line, "^\xef\xbb\xbf", "")
+                    line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
+                    local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
+                    local cfg, cfg_org = load_config(filename)
+                    if cfg then
+                        pt[#pt + 1] = { line, cfg, cfg_org }
+                    else
+                        log("WARNING: unable to load kit config from: " .. filename)
+                    end
+                end
+            end
+            if #pt > 0 then -- we have loaded compsetition-specific configs, skip regular ones
+                break
+            end
+        end
+        -- log("not edit mode:: all player kits: " .. t2s(pt))
+
+        -- goalkeepers
+        local gt = {}
+
+        local gk_order_files = {"\\gk_order.txt" } -- two elements max. - either specific gk_order file for current competition or generic gk_order.txt
+        if comp_prefix then
+            table.insert(gk_order_files, 1, string.format("\\%s_gk_order.txt", comp_prefix)) -- competition-specific gk_order file gets priority over generic one ...
+        end
+        -- log("GK order.txt files: " .. t2s(gk_order_files))
+        for i, gk_order_file in pairs(gk_order_files) do -- if competition-specific gk_order file exists, use its entries, otherwise fall back to generic gk_order.txt
+            local f = io.open(kroot .. path .. gk_order_file)
+            if f then
+                f:close()
+                for line in io.lines(kroot .. path .. gk_order_file) do
+                    line = string.gsub(line, "^\xef\xbb\xbf", "")
+                    line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
+                    local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
+                    local cfg, cfg_org = load_config(filename)
+                    if cfg then
+                        gt[#gt + 1] = { line, cfg, cfg_org }
+                    else
+                        log("WARNING: unable to load GK kit config from: " .. filename)
+                    end
+                end
+            end
+            if #gt > 0 then -- we have loaded compsetition-specific GK configs, skip regular ones
+                break
+            end
+        end
+        -- log("not edit mode:: all gk kits: " .. t2s(gt))
+
+        return pt, gt
     end
-    return pt, gt
 end
 
 local function get_curr_kit(ctx, team_id, home_or_away)
