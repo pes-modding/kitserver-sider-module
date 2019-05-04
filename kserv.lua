@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9c"
+m.version = "1.9d"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -381,7 +381,7 @@ local function KitConfigEditor_get_settings(team_id, kit_path, kit_info)
         configEd_settings[team_id] = configEd_settings[team_id] or {}
         configEd_settings[team_id][kit_path] = {}
         for name, value in pairs(kit_info) do
-            if name and value and not configEd_settings[team_id][kit_path][name] then -- do not repeatedly overwrite color properties that will use subprops
+            if name and name ~= "CompKit" and value and not configEd_settings[team_id][kit_path][name] then -- do not repeatedly overwrite color properties that will use subprops
                 value = tonumber(value) or value:gsub("%s+", "") -- strip trailing whitespaces, if it is a string ...
                 configEd_settings[team_id][kit_path][name] = value
             end
@@ -510,6 +510,11 @@ local function save_config(filename, cfg, cfg_org)
         end
     end
     -- write remaining (new) key/value pairs, if any left
+    -- but, do not save the CompKit flag ...
+    if cfg_dup['CompKit'] then
+        cfg_dup['CompKit'] = nil
+        -- log("CompKit flag removed while saving config ...")
+    end
     if tableLength(cfg_dup)>0 then
         f:write("\n")
         f:write("; values added by kserv.lua\n")
@@ -579,14 +584,18 @@ local function load_configs_for_team(ctx, team_id)
     end
     log(string.format("looking for configs for: %s", path))
 
-    if is_edit_mode(ctx) then
+    if is_edit_mode(ctx) or (comp_id and comp_id == 65535)  then
         -- in edit mode we have to be able to cycle through ALL kits - the ones from generic order.txt and from all the possible competition-specific .txt's
         -- (e.g. for Liverpool - they could easily have at least two competition-specific kits - for UCL and FA cup)
+
+        -- the same principle might apply to exhibition mode too? what harm could we create if we "merge" all order files togehter and enable ...
+        -- ... using all the possible kits in exhibition mode? Regular ones and comp-specific? To give that "full manual" selection choice?
+        -- Some badge handling would be required (dummy badges that replace official ones), but that's also on TO-DO list
 
         -- players
         local pt = {}
         local order_files = get_all_order_files_for_team(path, false) -- is_gk = false, fetch players' kits
-        -- log("In edit mode:: all_order_files for players: " .. t2s(order_files))
+        log(string.format("In %s mode:: all_order_files for players: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(order_files))
         for i, order_file in pairs(order_files) do -- if competition-specific order file exists, use its entries, otherwise fall back to generic order.txt in second iteration
             local f = io.open(kroot .. path .. order_file)
             if f then
@@ -597,6 +606,11 @@ local function load_configs_for_team(ctx, team_id)
                     local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
                     local cfg, cfg_org = load_config(filename)
                     if cfg then
+                        -- part oh the badge handling routine - let's tag this config as competition-specific if it does not originate from order.txt
+                        if string.lower(order_file) ~= "\\order.txt" then
+                            cfg.CompKit = true
+                            -- log("Player kit " .. t2s(cfg) .. " tagged as CompKit.")
+                        end
                         pt[#pt + 1] = { line, cfg, cfg_org }
                     else
                         log("WARNING: unable to load kit config from: " .. filename)
@@ -604,12 +618,12 @@ local function load_configs_for_team(ctx, team_id)
                 end
             end
         end
-        -- log("edit mode:: all player kits: " .. t2s(pt))
+        log(string.format("%s mode:: all player kits: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(pt))
 
         -- goalkeepers
         local gt = {}
         local gk_order_files = get_all_order_files_for_team(path, true) -- is_gk = true, fetch keepers' kits
-        -- log("In edit mode:: all_order_files for keepers: " .. t2s(gk_order_files))
+        log(string.format("In %s mode:: all_order_files for keepers: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(gk_order_files))
         for i, gk_order_file in pairs(gk_order_files) do -- if competition-specific gk_order file exists, use its entries, otherwise fall back to generic gk_order.txt
             local f = io.open(kroot .. path .. gk_order_file)
             if f then
@@ -620,6 +634,11 @@ local function load_configs_for_team(ctx, team_id)
                     local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
                     local cfg, cfg_org = load_config(filename)
                     if cfg then
+                        -- part oh the badge handling routine - let's tag this config as competition-specific if it does not originate from gk_order.txt
+                        if string.lower(gk_order_file) ~= "\\gk_order.txt" then
+                            cfg.CompKit = true
+                            -- log("GK kit " .. t2s(cfg) .. " tagged as CompKit.")
+                        end
                         gt[#gt + 1] = { line, cfg, cfg_org }
                     else
                         log("WARNING: unable to load GK kit config from: " .. filename)
@@ -627,10 +646,10 @@ local function load_configs_for_team(ctx, team_id)
                 end
             end
         end
-        -- log("edit mode:: all gk kits: " .. t2s(gt))
+       log(string.format("%s mode:: all gk kits: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(gt))
 
         return pt, gt
-    else -- pre-match menus? hopefully, this is reliable enough
+    else -- pre-match menus in non-exhibition modes? hopefully, this is reliable enough
         -- only two possible order files - either generic one or the competition specific one (determined by comp_id)
 
         -- players
@@ -651,6 +670,11 @@ local function load_configs_for_team(ctx, team_id)
                     local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
                     local cfg, cfg_org = load_config(filename)
                     if cfg then
+                        -- part oh the badge handling routine - let's tag this config as competition-specific if it does not originate from order.txt
+                        if string.lower(order_file) ~= "\\order.txt" then
+                            cfg.CompKit = true
+                            -- log("Player kit " .. t2s(cfg) .. " tagged as CompKit.")
+                        end
                         pt[#pt + 1] = { line, cfg, cfg_org }
                     else
                         log("WARNING: unable to load kit config from: " .. filename)
@@ -661,7 +685,7 @@ local function load_configs_for_team(ctx, team_id)
                 break
             end
         end
-        -- log("not edit mode:: all player kits: " .. t2s(pt))
+        log("not edit/exhibition mode:: all player kits: " .. t2s(pt))
 
         -- goalkeepers
         local gt = {}
@@ -681,6 +705,11 @@ local function load_configs_for_team(ctx, team_id)
                     local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
                     local cfg, cfg_org = load_config(filename)
                     if cfg then
+                        -- part oh the badge handling routine - let's tag this config as competition-specific if it does not originate from gk_order.txt
+                        if string.lower(gk_order_file) ~= "\\gk_order.txt" then
+                            cfg.CompKit = true
+                            -- log("GK kit " .. t2s(cfg) .. " tagged as CompKit.")
+                        end
                         gt[#gt + 1] = { line, cfg, cfg_org }
                     else
                         log("WARNING: unable to load GK kit config from: " .. filename)
@@ -691,7 +720,7 @@ local function load_configs_for_team(ctx, team_id)
                 break
             end
         end
-        -- log("not edit mode:: all gk kits: " .. t2s(gt))
+        log("not edit/exhibition mode:: all gk kits: " .. t2s(gt))
 
         return pt, gt
     end
@@ -915,6 +944,36 @@ function m.make_key(ctx, filename)
         --log(string.format("mapped: {%s} ==> {%s}", filename, key))
         return key
     end
+
+    -- is it a badge??
+    -- JUST A TEST FOR NOW ... but it does not seem to be a good approach for Exhibition mode
+    -- Since exhibition mode starts with regular kits, licensed badge(s) WILL be loaded as soon as the first kit is dosplayed in pre-match menu ...
+    -- ... and it will never be re-loaded again for any other subsequent kits, as it seems (reqular or comp-kit)  :(
+    -- ... ideally, log statements below should appear after every kit switch via [6] or [7] ...
+    -- ... but it triggers only once
+    if
+        string.match(string.lower(filename), "asset\\model\\character\\uniform\\badge\\#windx11\\badge%d%d%.ftex") or
+        string.match(string.lower(filename), "asset\\model\\character\\uniform\\badge\\#windx11\\badge_of_honour_%d%d%.ftex") or
+        string.match(string.lower(filename), "asset\\model\\character\\uniform\\badge\\#windx11\\respect_badge.ftex")
+    then
+        local kit_data = get_curr_kit(ctx, ctx.home_team, 0) -- 0 = home, 1 = away
+        log("home kit_config when badge requested: " .. t2s(kit_data[2]))
+        if kit_data and kit_data[2] and kit_data[2]['CompKit'] then
+            log("home kit " .. kit_data[1] .. " tagged as CompKit")
+        end
+        -- log("home kit_path when badge requested: " .. kit_data[1])
+        -- log("home kit_config when badge requested: " .. t2s(kit_data[2]))
+        kit_data = get_curr_kit(ctx, ctx.away_team, 1) -- 0 = home, 1 = away
+        log("away kit_config when badge requested: " .. t2s(kit_data[2]))
+        if kit_data and kit_data[2] and kit_data[2]['CompKit'] then
+            log("away kit " .. kit_data[1] .. " tagged as CompKit")
+        end
+        -- log("away kit_path when badge requested: " .. kit_data[1])
+        -- log("away kit_config when badge requested: " .. t2s(kit_data[2]))
+
+        -- return "dummy_badge\\dummy_badge.ftex"
+    end
+
 end
 
 function m.get_filepath(ctx, filename, key)
