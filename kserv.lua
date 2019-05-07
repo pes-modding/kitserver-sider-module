@@ -69,6 +69,9 @@ local function file_exists(filename)
 end
 
 local function t2s(t)
+    if not t then
+        return tostring(t)
+    end
     local parts = {}
     for k,v in pairs(t) do
         parts[#parts + 1] = string.format("%s=%s", k, v)
@@ -728,13 +731,31 @@ end
 
 local function get_curr_kit(ctx, team_id, home_or_away)
     local kit_id = ctx.kits.get_current_kit_id(home_or_away)
-    local kit_path = standard_kits[kit_id] or standard_kits[1]
-    return { kit_path, ctx.kits.get(team_id, kit_id) }
+    if home_or_away == 0 then
+        local idx = home_loaded_for[kit_id]
+        if idx and home_kits then
+            return home_kits[idx]
+        end
+    else
+        local idx = away_loaded_for[kit_id]
+        if idx and away_kits then
+            return away_kits[idx]
+        end
+    end
 end
 
-local function get_curr_gk_kit(ctx, team_id)
-    local kit_path = standard_gk_kits[1]
-    return { kit_path, ctx.kits.get_gk(team_id) }
+local function get_curr_gk_kit(ctx, team_id, home_or_away)
+    if home_or_away == 0 then
+        local idx = home_gk_loaded_for[0]
+        if idx and home_gk_kits then
+            return home_gk_kits[idx]
+        end
+    else
+        local idx = away_gk_loaded_for[0]
+        if idx and away_gk_kits then
+            return away_gk_kits[idx]
+        end
+    end
 end
 
 local function dump_kit_config(filename, t)
@@ -952,26 +973,26 @@ function m.make_key(ctx, filename)
     -- ... ideally, log statements below should appear after every kit switch via [6] or [7] ...
     -- ... but it triggers only once
     if
-        string.match(string.lower(filename), "asset\\model\\character\\uniform\\badge\\#windx11\\badge%d%d%.ftex") or
-        string.match(string.lower(filename), "asset\\model\\character\\uniform\\badge\\#windx11\\badge_of_honour_%d%d%.ftex") or
-        string.match(string.lower(filename), "asset\\model\\character\\uniform\\badge\\#windx11\\respect_badge.ftex")
+        string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\badge%d%d%.ftex") or
+        string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\badge_of_honour_%d%d%.ftex") or
+        string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\respect_badge.ftex")
     then
         local kit_data = get_curr_kit(ctx, ctx.home_team, 0) -- 0 = home, 1 = away
-        log("home kit_config when badge requested: " .. t2s(kit_data[2]))
+        log("home kit_config when badge requested: " .. t2s(kit_data and kit_data[2]))
         if kit_data and kit_data[2] and kit_data[2]['CompKit'] then
             log("home kit " .. kit_data[1] .. " tagged as CompKit")
         end
         -- log("home kit_path when badge requested: " .. kit_data[1])
         -- log("home kit_config when badge requested: " .. t2s(kit_data[2]))
         kit_data = get_curr_kit(ctx, ctx.away_team, 1) -- 0 = home, 1 = away
-        log("away kit_config when badge requested: " .. t2s(kit_data[2]))
+        log("away kit_config when badge requested: " .. t2s(kit_data and kit_data[2]))
         if kit_data and kit_data[2] and kit_data[2]['CompKit'] then
             log("away kit " .. kit_data[1] .. " tagged as CompKit")
         end
         -- log("away kit_path when badge requested: " .. kit_data[1])
         -- log("away kit_config when badge requested: " .. t2s(kit_data[2]))
 
-        -- return "dummy_badge\\dummy_badge.ftex"
+        return "dummy_badge\\dummy_badge.ftex"
     end
 
 end
