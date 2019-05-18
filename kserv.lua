@@ -967,32 +967,22 @@ function m.make_key(ctx, filename)
     end
 
     -- is it a badge??
-    -- JUST A TEST FOR NOW ... but it does not seem to be a good approach for Exhibition mode
-    -- Since exhibition mode starts with regular kits, licensed badge(s) WILL be loaded as soon as the first kit is dosplayed in pre-match menu ...
-    -- ... and it will never be re-loaded again for any other subsequent kits, as it seems (reqular or comp-kit)  :(
-    -- ... ideally, log statements below should appear after every kit switch via [6] or [7] ...
-    -- ... but it triggers only once
     if
         string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\badge%d%d%.ftex") or
         string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\badge_of_honour_%d%d%.ftex") or
         string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\respect_badge.ftex")
     then
+        log(string.format("loading badge:: (%s)", filename))
         local kit_data = get_curr_kit(ctx, ctx.home_team, 0) -- 0 = home, 1 = away
-        log("home kit_config when badge requested: " .. t2s(kit_data and kit_data[2]))
-        if kit_data and kit_data[2] and kit_data[2]['CompKit'] then
-            log("home kit " .. kit_data[1] .. " tagged as CompKit")
+        if kit_data then
+            log("loading dummy badge, because home team has kitserver kits")
+            return "dummy_badge\\dummy_badge.ftex"
         end
-        -- log("home kit_path when badge requested: " .. kit_data[1])
-        -- log("home kit_config when badge requested: " .. t2s(kit_data[2]))
-        kit_data = get_curr_kit(ctx, ctx.away_team, 1) -- 0 = home, 1 = away
-        log("away kit_config when badge requested: " .. t2s(kit_data and kit_data[2]))
-        if kit_data and kit_data[2] and kit_data[2]['CompKit'] then
-            log("away kit " .. kit_data[1] .. " tagged as CompKit")
+        local kit_data = get_curr_kit(ctx, ctx.away_team, 1) -- 0 = home, 1 = away
+        if kit_data then
+            log("loading dummy badge, because away team has kitserver kits")
+            return "dummy_badge\\dummy_badge.ftex"
         end
-        -- log("away kit_path when badge requested: " .. kit_data[1])
-        -- log("away kit_config when badge requested: " .. t2s(kit_data[2]))
-
-        return "dummy_badge\\dummy_badge.ftex"
     end
 
 end
