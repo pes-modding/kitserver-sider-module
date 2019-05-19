@@ -974,12 +974,12 @@ function m.make_key(ctx, filename)
     then
         log(string.format("loading badge:: (%s)", filename))
         local kit_data = get_curr_kit(ctx, ctx.home_team, 0) -- 0 = home, 1 = away
-        if kit_data then
+        if kit_data and (ctx.tournament_id == 65535 or (kit_data[2] and kit_data[2].CompKit)) then
             log("loading dummy badge, because home team has kitserver kits")
             return "dummy_badge\\dummy_badge.ftex"
         end
         local kit_data = get_curr_kit(ctx, ctx.away_team, 1) -- 0 = home, 1 = away
-        if kit_data then
+        if kit_data and (ctx.tournament_id == 65535 or (kit_data[2] and kit_data[2].CompKit)) then
             log("loading dummy badge, because away team has kitserver kits")
             return "dummy_badge\\dummy_badge.ftex"
         end
