@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9d"
+m.version = "1.9e"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -418,6 +418,17 @@ local function get_home_kit_path_for(kit_id, is_gk)
     return kit_path
 end
 
+local function get_away_kit_path_for(kit_id, is_gk)
+    if not kit_id then
+        return
+    end
+    local ord = is_gk and away_gk_loaded_for[kit_id] or away_loaded_for[kit_id]
+    local kits = is_gk and away_gk_kits or away_kits
+    local kit_path = kits and kits[ord] and kits[ord][1]
+    kit_path = kit_path or (is_gk and standard_gk_kits[kit_id+1] or standard_kits[kit_id+1])
+    return kit_path
+end
+
 local function is_edit_mode(ctx)
     -- sorta works now, but probably needs to be more robust
     local home_team_id = ctx.kits.get_current_team(0)
@@ -573,6 +584,49 @@ local function get_all_order_files_for_team(path, is_gk)
     return all_order_files
 end
 
+local function load_collections(path, orderfile, collection_name)
+    local filename = kroot .. path .. "\\" .. orderfile
+    local f = io.open(filename)
+    if f then
+        f:close()
+        local t = {}
+        local collection = "default"
+        for line in io.lines(filename) do
+            -- strip BOF
+            line = string.gsub(line, "^\xef\xbb\xbf", "")
+            -- strip comments
+            line = string.gsub(line, ";.*", "")
+            line = string.gsub(line, "#.*", "")
+            -- get string value
+            line = string.match(line, "%s*([^%s]+)%s*")
+            if line then
+                local new_collection = string.match(line, "%[([^%]]+)%]")
+                if new_collection then
+                    collection = new_collection
+                else
+                    -- only load sections that were asked for
+                    if collection_name == nil or collection_name == collection then
+                        local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
+                        local cfg, cfg_org = load_config(filename)
+                        if cfg then
+                            -- part oh the badge handling routine:
+                            -- let's tag this config as competition-specific if it is not part of default collection
+                            if collection ~= "default" then
+                                cfg.CompKit = true
+                                -- log("kit " .. t2s(cfg) .. " tagged as CompKit.")
+                            end
+                            t[#t + 1] = { line, cfg, cfg_org }
+                        else
+                            log("WARNING: unable to load kit config from: " .. filename)
+                        end
+                    end
+                end
+            end
+        end
+        return t
+    end
+end
+
 local function load_configs_for_team(ctx, team_id)
     -- ctx added for comp_id retrieval
     local path = kmap[team_id]
@@ -596,132 +650,28 @@ local function load_configs_for_team(ctx, team_id)
         -- Some badge handling would be required (dummy badges that replace official ones), but that's also on TO-DO list
 
         -- players
-        local pt = {}
-        local order_files = get_all_order_files_for_team(path, false) -- is_gk = false, fetch players' kits
-        log(string.format("In %s mode:: all_order_files for players: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(order_files))
-        for i, order_file in pairs(order_files) do -- if competition-specific order file exists, use its entries, otherwise fall back to generic order.txt in second iteration
-            local f = io.open(kroot .. path .. order_file)
-            if f then
-                f:close()
-                for line in io.lines(kroot .. path .. order_file) do
-                    line = string.gsub(line, "^\xef\xbb\xbf", "")
-                    line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
-                    local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-                    local cfg, cfg_org = load_config(filename)
-                    if cfg then
-                        -- part oh the badge handling routine - let's tag this config as competition-specific if it does not originate from order.txt
-                        if string.lower(order_file) ~= "\\order.txt" then
-                            cfg.CompKit = true
-                            -- log("Player kit " .. t2s(cfg) .. " tagged as CompKit.")
-                        end
-                        pt[#pt + 1] = { line, cfg, cfg_org }
-                    else
-                        log("WARNING: unable to load kit config from: " .. filename)
-                    end
-                end
-            end
-        end
+        local pt = load_collections(path, "order.ini")
         log(string.format("%s mode:: all player kits: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(pt))
 
         -- goalkeepers
-        local gt = {}
-        local gk_order_files = get_all_order_files_for_team(path, true) -- is_gk = true, fetch keepers' kits
-        log(string.format("In %s mode:: all_order_files for keepers: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(gk_order_files))
-        for i, gk_order_file in pairs(gk_order_files) do -- if competition-specific gk_order file exists, use its entries, otherwise fall back to generic gk_order.txt
-            local f = io.open(kroot .. path .. gk_order_file)
-            if f then
-                f:close()
-                for line in io.lines(kroot .. path .. gk_order_file) do
-                    line = string.gsub(line, "^\xef\xbb\xbf", "")
-                    line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
-                    local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-                    local cfg, cfg_org = load_config(filename)
-                    if cfg then
-                        -- part oh the badge handling routine - let's tag this config as competition-specific if it does not originate from gk_order.txt
-                        if string.lower(gk_order_file) ~= "\\gk_order.txt" then
-                            cfg.CompKit = true
-                            -- log("GK kit " .. t2s(cfg) .. " tagged as CompKit.")
-                        end
-                        gt[#gt + 1] = { line, cfg, cfg_org }
-                    else
-                        log("WARNING: unable to load GK kit config from: " .. filename)
-                    end
-                end
-            end
-        end
-       log(string.format("%s mode:: all gk kits: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(gt))
+        local gt = load_collections(path, "gk_order.ini")
+        log(string.format("%s mode:: all gk kits: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(gt))
 
         return pt, gt
     else -- pre-match menus in non-exhibition modes? hopefully, this is reliable enough
         -- only two possible order files - either generic one or the competition specific one (determined by comp_id)
 
         -- players
-        local pt = {}
-
-        local order_files = {"\\order.txt" } -- two elements max. - either specific order file for current competition or generic order.txt
-        if comp_prefix then
-            table.insert(order_files, 1, string.format("\\%s_order.txt", comp_prefix)) -- competition-specific order file appears before the generic one ...
-        end
-        -- log("Player order.txt files: " .. t2s(order_files))
-        for i, order_file in pairs(order_files) do -- if competition-specific order file exists, use its entries, otherwise fall back to generic order.txt in second iteration
-            local f = io.open(kroot .. path .. order_file)
-            if f then
-                f:close()
-                for line in io.lines(kroot .. path .. order_file) do
-                    line = string.gsub(line, "^\xef\xbb\xbf", "")
-                    line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
-                    local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-                    local cfg, cfg_org = load_config(filename)
-                    if cfg then
-                        -- part oh the badge handling routine - let's tag this config as competition-specific if it does not originate from order.txt
-                        if string.lower(order_file) ~= "\\order.txt" then
-                            cfg.CompKit = true
-                            -- log("Player kit " .. t2s(cfg) .. " tagged as CompKit.")
-                        end
-                        pt[#pt + 1] = { line, cfg, cfg_org }
-                    else
-                        log("WARNING: unable to load kit config from: " .. filename)
-                    end
-                end
-            end
-            if #pt > 0 then -- we have loaded compsetition-specific configs, skip regular ones
-                break
-            end
+        local pt = load_collections(path, "order.ini", comp_prefix or "default")
+        if not pt then
+            pt  = load_collections(path, "order.ini", "default")
         end
         log("not edit/exhibition mode:: all player kits: " .. t2s(pt))
 
         -- goalkeepers
-        local gt = {}
-
-        local gk_order_files = {"\\gk_order.txt" } -- two elements max. - either specific gk_order file for current competition or generic gk_order.txt
-        if comp_prefix then
-            table.insert(gk_order_files, 1, string.format("\\%s_gk_order.txt", comp_prefix)) -- competition-specific gk_order file gets priority over generic one ...
-        end
-        -- log("GK order.txt files: " .. t2s(gk_order_files))
-        for i, gk_order_file in pairs(gk_order_files) do -- if competition-specific gk_order file exists, use its entries, otherwise fall back to generic gk_order.txt
-            local f = io.open(kroot .. path .. gk_order_file)
-            if f then
-                f:close()
-                for line in io.lines(kroot .. path .. gk_order_file) do
-                    line = string.gsub(line, "^\xef\xbb\xbf", "")
-                    line = string.gsub(string.gsub(line,"%s*$", ""), "^%s*", "")
-                    local filename = kroot .. path .. "\\" .. line .. "\\config.txt"
-                    local cfg, cfg_org = load_config(filename)
-                    if cfg then
-                        -- part oh the badge handling routine - let's tag this config as competition-specific if it does not originate from gk_order.txt
-                        if string.lower(gk_order_file) ~= "\\gk_order.txt" then
-                            cfg.CompKit = true
-                            -- log("GK kit " .. t2s(cfg) .. " tagged as CompKit.")
-                        end
-                        gt[#gt + 1] = { line, cfg, cfg_org }
-                    else
-                        log("WARNING: unable to load GK kit config from: " .. filename)
-                    end
-                end
-            end
-            if #gt > 0 then -- we have loaded compsetition-specific GK configs, skip regular ones
-                break
-            end
+        local gt = load_collections(path, "gk_order.ini", comp_prefix or "default")
+        if not gt then
+            gt = load_collections(path, "gk_order.ini", "default")
         end
         log("not edit/exhibition mode:: all gk kits: " .. t2s(gt))
 
@@ -1481,6 +1431,13 @@ function m.overlay_on(ctx)
                 -- end kit config editor part ...
                 _team_id, get_home_kit_path_for(_kit_id, _is_gk),
                 config_editor_on and "ON" or "OFF")
+    elseif ctx.home_team and ctx.away_team and ctx.home_team ~=  0x1ffff and ctx.away_team ~= 0x1ffff then
+        local hkid = ctx.kits.get_current_kit_id(0)
+        local akid = ctx.kits.get_current_kit_id(1)
+        local hk = get_home_kit_path_for(hkid, is_gk_mode)
+        local ak = get_away_kit_path_for(akid, is_gk_mode)
+        return string.format("%s | %s:%s vs %s:%s | [6][7] - switch kits, [9] - PL/GK, [0] - reload map",
+            modes[is_gk_mode and 2 or 1], ctx.home_team, hk, ctx.away_team, ak)
     else
         return string.format("%s | [6][7] - switch kits, [9] - PL/GK, [0] - reload map",
             modes[is_gk_mode and 2 or 1])
