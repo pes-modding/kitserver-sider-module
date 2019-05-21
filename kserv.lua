@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9g"
+m.version = "1.9h"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -623,7 +623,7 @@ local function load_collections(path, orderfile, collection_name)
                 end
             end
         end
-        return t
+        return #t>0 and t or nil
     end
 end
 
