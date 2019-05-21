@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9e"
+m.version = "1.9f"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -781,6 +781,13 @@ local function update_kit_config(team_id, kit_ord, kit_path, cfg)
     -- (only do that for files that actually exist in kitserver content)
     kit_ord = kit_ord or (kit_path == "p2" and 2 or 1)
     config_update_filenames(team_id, kit_ord, kit_path, cfg, ks_player_formats)
+    -- trick: for CompKits move the badge out of the way
+    if cfg.CompKit then
+        cfg.LeftShortY = 31
+        cfg.LeftLongY = 31
+        cfg.RightShortY = 31
+        cfg.RightLongY = 31
+    end
 end
 
 local function update_gk_kit_config(team_id, kit_ord, kit_path, cfg)
@@ -795,6 +802,13 @@ local function update_gk_kit_config(team_id, kit_ord, kit_path, cfg)
     -- (only do that for files that actually exist in kitserver content)
     kit_ord = kit_ord or 1
     config_update_filenames(team_id, kit_ord, kit_path, cfg, ks_gk_formats)
+    -- trick: for CompKits move the badge out of the way
+    if cfg.CompKit then
+        cfg.LeftShortY = 31
+        cfg.LeftLongY = 31
+        cfg.RightShortY = 31
+        cfg.RightLongY = 31
+    end
 end
 
 local function reset_match(ctx)
@@ -915,26 +929,6 @@ function m.make_key(ctx, filename)
         --log(string.format("mapped: {%s} ==> {%s}", filename, key))
         return key
     end
-
-    -- is it a badge??
-    if
-        string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\badge%d%d%.ftex") or
-        string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\badge_of_honour_%d%d%.ftex") or
-        string.match(filename, "Asset\\model\\character\\uniform\\badge\\#windx11\\respect_badge.ftex")
-    then
-        log(string.format("loading badge:: (%s)", filename))
-        local kit_data = get_curr_kit(ctx, ctx.home_team, 0) -- 0 = home, 1 = away
-        if kit_data and (ctx.tournament_id == 65535 or (kit_data[2] and kit_data[2].CompKit)) then
-            log("loading dummy badge, because home team has kitserver kits")
-            return "dummy_badge\\dummy_badge.ftex"
-        end
-        local kit_data = get_curr_kit(ctx, ctx.away_team, 1) -- 0 = home, 1 = away
-        if kit_data and (ctx.tournament_id == 65535 or (kit_data[2] and kit_data[2].CompKit)) then
-            log("loading dummy badge, because away team has kitserver kits")
-            return "dummy_badge\\dummy_badge.ftex"
-        end
-    end
-
 end
 
 function m.get_filepath(ctx, filename, key)
