@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9h"
+m.version = "1.9i"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -614,6 +614,11 @@ local function load_collections(path, orderfile, collection_name)
                             if collection ~= "default" then
                                 cfg.CompKit = true
                                 -- log("kit " .. t2s(cfg) .. " tagged as CompKit.")
+                                -- trick: turn the badge off
+                                cfg.RightShortX = 31
+                                cfg.RightLongX = 31
+                                cfg.LeftShortX = 31
+                                cfg.LeftLongX = 31
                             end
                             t[#t + 1] = { line, cfg, cfg_org }
                         else
@@ -788,13 +793,6 @@ local function update_kit_config(team_id, kit_ord, kit_path, cfg)
     -- (only do that for files that actually exist in kitserver content)
     kit_ord = kit_ord or (kit_path == "p2" and 2 or 1)
     config_update_filenames(team_id, kit_ord, kit_path, cfg, ks_player_formats)
-    -- trick: for CompKits move the badge out of the way
-    if cfg.CompKit then
-        cfg.LeftShortY = 31
-        cfg.LeftLongY = 31
-        cfg.RightShortY = 31
-        cfg.RightLongY = 31
-    end
 end
 
 local function update_gk_kit_config(team_id, kit_ord, kit_path, cfg)
@@ -809,13 +807,6 @@ local function update_gk_kit_config(team_id, kit_ord, kit_path, cfg)
     -- (only do that for files that actually exist in kitserver content)
     kit_ord = kit_ord or 1
     config_update_filenames(team_id, kit_ord, kit_path, cfg, ks_gk_formats)
-    -- trick: for CompKits move the badge out of the way
-    if cfg.CompKit then
-        cfg.LeftShortY = 31
-        cfg.LeftLongY = 31
-        cfg.RightShortY = 31
-        cfg.RightLongY = 31
-    end
 end
 
 local function reset_match(ctx)
