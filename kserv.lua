@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9i"
+m.version = "1.9j"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -21,6 +21,11 @@ local away_next_gk_kit
 
 local is_gk_mode = false
 local modes = { "PLAYERS", "GOALKEEPERS" }
+
+local MODIFIER_VKEY1 = 0x10  -- shift
+local MODIFIER_VKEY2 = 0x11  -- ctrl
+local _modifier1_on
+local _modifier2_on
 
 local home_loaded_for = {}
 local home_gk_loaded_for = {}
@@ -936,7 +941,13 @@ function m.get_filepath(ctx, filename, key)
 end
 
 function m.key_up(ctx, vkey)
-    if config_editor_on and (vkey == PREV_VALUE_KEY or vkey == NEXT_VALUE_KEY) then
+    if vkey == MODIFIER_VKEY1 then
+        _modifier1_on = nil
+
+    elseif vkey == MODIFIER_VKEY2 then
+        _modifier2_on = nil
+
+    elseif config_editor_on and (vkey == PREV_VALUE_KEY or vkey == NEXT_VALUE_KEY) then
         local s = overlay_states[overlay_curr]
         local kit_id, is_gk = ctx.kits.get_current_kit_id(0)
         local kit_ord = get_home_kit_ord_for(kit_id, is_gk)
@@ -961,8 +972,24 @@ function m.key_up(ctx, vkey)
     end
 end
 
+local function advance(curr_kit, num_kits)
+    if _modifier1_on then
+        return 1
+    elseif _modifier2_on then
+        return num_kits - (num_kits - curr_kit + 1) % num_kits
+    else
+        return (curr_kit % num_kits) + 1
+    end
+end
+
 function m.key_down(ctx, vkey)
-    if vkey == 0x30 then
+    if vkey == MODIFIER_VKEY1 then
+        _modifier1_on = true
+
+    elseif vkey == MODIFIER_VKEY2 then
+        _modifier2_on = true
+
+    elseif vkey == 0x30 then
         kmap = load_map(kroot .. "\\map.txt")
         log("Reloaded map from: " .. kroot .. "\\map.txt")
         compmap = load_compmap(kroot .. "\\map_comp.txt")
@@ -1093,7 +1120,7 @@ function m.key_down(ctx, vkey)
             -- players
             if home_kits and #home_kits > 0 then
                 -- advance the iter
-                home_next_kit = (home_next_kit % #home_kits) + 1
+                home_next_kit = advance(home_next_kit, #home_kits)
                 log("home_next_kit: " .. home_next_kit)
                 -- update cfg
                 local curr = home_kits[home_next_kit]
@@ -1110,7 +1137,7 @@ function m.key_down(ctx, vkey)
             -- goalkeepers
             if home_gk_kits and #home_gk_kits > 0 then
                 -- advance the iter
-                home_next_gk_kit = (home_next_gk_kit % #home_gk_kits) + 1
+                home_next_gk_kit = advance(home_next_gk_kit, #home_gk_kits)
                 log("home_next_gk_kit: " .. home_next_gk_kit)
                 -- update cfg
                 local curr = home_gk_kits[home_next_gk_kit]
@@ -1138,7 +1165,7 @@ function m.key_down(ctx, vkey)
             -- players
             if away_kits and #away_kits > 0 then
                 -- advance the iter
-                away_next_kit = (away_next_kit % #away_kits) + 1
+                away_next_kit = advance(away_next_kit, #away_kits)
                 log("away_next_kit: " .. away_next_kit)
                 -- update cfg
                 local curr = away_kits[away_next_kit]
@@ -1154,7 +1181,7 @@ function m.key_down(ctx, vkey)
             -- goalkeepers
             if away_gk_kits and #away_gk_kits > 0 then
                 -- advance the iter
-                away_next_gk_kit = (away_next_gk_kit % #away_gk_kits) + 1
+                away_next_gk_kit = advance(away_next_gk_kit, #away_gk_kits)
                 log("away_next_gk_kit: " .. away_next_gk_kit)
                 -- update cfg
                 local curr = away_gk_kits[away_next_gk_kit]
