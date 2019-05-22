@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9j"
+m.version = "1.9k"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -621,9 +621,13 @@ local function load_collections(path, orderfile, collection_name)
                                 -- log("kit " .. t2s(cfg) .. " tagged as CompKit.")
                                 -- trick: turn the badge off
                                 cfg.RightShortX = 31
+                                cfg.RightShortY = 0
                                 cfg.RightLongX = 31
+                                cfg.RightLongY = 0
                                 cfg.LeftShortX = 31
+                                cfg.LeftShortY = 0
                                 cfg.LeftLongX = 31
+                                cfg.LeftLongY = 0
                             end
                             t[#t + 1] = { line, cfg, cfg_org }
                         else
