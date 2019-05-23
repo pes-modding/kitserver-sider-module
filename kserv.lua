@@ -3,7 +3,7 @@
 
 local m = {}
 
-m.version = "1.9k"
+m.version = "1.9l"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -642,13 +642,6 @@ local function load_collections(path, orderfile, collection_name)
 end
 
 local function load_configs_for_team(ctx, team_id)
-    -- check if team is licensed
-    local has_kit = ctx.kits.get(team_id, 0)
-    if not has_kit then
-        log(string.format("we have kitserver kits for: %s, but the team is unlicensed. Disabling kits.", team_id))
-        return nil, nil
-    end
-
     -- ctx added for comp_id retrieval
     local path = kmap[team_id]
 
@@ -660,6 +653,16 @@ local function load_configs_for_team(ctx, team_id)
         log(string.format("no kitserver kits for: %s", team_id))
         return nil, nil
     end
+
+    -- check if team is licensed
+    if team_id then
+        local has_kit = ctx.kits.get(team_id, 0)
+        if not has_kit then
+            log(string.format("we have kitserver kits for: %s, but the team is unlicensed. Disabling kits.", team_id))
+            return nil, nil
+        end
+    end
+
     log(string.format("looking for configs for: %s", path))
 
     if is_edit_mode(ctx) or (comp_id and comp_id == 65535)  then
