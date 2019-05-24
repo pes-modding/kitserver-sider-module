@@ -1,9 +1,12 @@
 -- kserv.lua
 -- Experimental kitserver with GDB
+-- written by juce and zlac
+-- beta-tested by Hawke and Cesc Fabregas
+-- requires: sider 5.4.0 or newer
 
 local m = {}
 
-m.version = "1.9l"
+m.version = "1.0"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -22,10 +25,16 @@ local away_next_gk_kit
 local is_gk_mode = false
 local modes = { "PLAYERS", "GOALKEEPERS" }
 
-local MODIFIER_VKEY1 = 0x10  -- shift
-local MODIFIER_VKEY2 = 0x11  -- ctrl
+local MODIFIER1_VKEY = 0x10  -- shift
+local MODIFIER2_VKEY = 0x11  -- ctrl
 local _modifier1_on
 local _modifier2_on
+
+local NEXT_HOME_KIT_VKEY = 0x36  -- 6
+local NEXT_AWAY_KIT_VKEY = 0x37  -- 7
+local EDITOR_TOGGLE_VKEY = 0x32  -- 2
+local PL_GK_TOGGLE_VKEY = 0x39 -- 9
+local RELOAD_MAP_VKEY = 0x30 -- 0
 
 local home_loaded_for = {}
 local home_gk_loaded_for = {}
@@ -398,8 +407,6 @@ local function KitConfigEditor_get_settings(team_id, kit_path, kit_info)
     end
 end
 
--- end kit config editor part ...
-
 local standard_kits = { "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9" }
 local standard_gk_kits = { "g1" }
 
@@ -440,8 +447,6 @@ local function is_edit_mode(ctx)
     local away_team_id = ctx.kits.get_current_team(1)
     return home_team_id ~= 0x1ffff and away_team_id == 0x1ffff
 end
-
--- end kit config editor part ...
 
 local function load_map(filename)
     local map = {}
@@ -573,22 +578,6 @@ local function apply_changes(team_id, ki, cfg, save_to_disk)
     save_config(filename, ki[2], ki[3])
 end
 
-local function get_all_order_files_for_team(path, is_gk)
-    local all_order_files = is_gk == true and {"\\gk_order.txt"} or {"\\order.txt"}  -- generic one is always assumed to be there ...
-    local inverted_compmap = tableInvert(compmap) -- eliminates duplicated prefix values as a side-effect (e.g. "ucl" remains only once), id's are actualy not needed here
-    -- log("compmap: " .. t2s(compmap))
-    -- log("inverted compmap: " .. t2s(tableInvert(compmap)))
-    for comp_prefix, comp_id in pairs(inverted_compmap) do
-        local order_file = string.format("\\%s_order.txt", string.format("%s%s", comp_prefix, is_gk == true and "_gk" or "") )
-        local f = io.open(kroot .. path .. order_file)
-        if f then
-            f:close()
-            table.insert(all_order_files, #all_order_files+1, order_file) -- append at the end of the table
-        end
-    end
-    return all_order_files
-end
-
 local function load_collections(path, orderfile, collection_name)
     local filename = kroot .. path .. "\\" .. orderfile
     local f = io.open(filename)
@@ -666,12 +655,9 @@ local function load_configs_for_team(ctx, team_id)
     log(string.format("looking for configs for: %s", path))
 
     if is_edit_mode(ctx) or (comp_id and comp_id == 65535)  then
-        -- in edit mode we have to be able to cycle through ALL kits - the ones from generic order.txt and from all the possible competition-specific .txt's
+        -- in edit mode we have to be able to cycle through ALL kits - default ones for the league and competition-specific.
         -- (e.g. for Liverpool - they could easily have at least two competition-specific kits - for UCL and FA cup)
-
-        -- the same principle might apply to exhibition mode too? what harm could we create if we "merge" all order files togehter and enable ...
-        -- ... using all the possible kits in exhibition mode? Regular ones and comp-specific? To give that "full manual" selection choice?
-        -- Some badge handling would be required (dummy badges that replace official ones), but that's also on TO-DO list
+        -- the same principle applies to exhibition mode too.
 
         -- players
         local pt = load_collections(path, "order.ini")
@@ -682,8 +668,9 @@ local function load_configs_for_team(ctx, team_id)
         log(string.format("%s mode:: all gk kits: ", is_edit_mode(ctx) and "edit" or "exhibition") .. t2s(gt))
 
         return pt, gt
-    else -- pre-match menus in non-exhibition modes? hopefully, this is reliable enough
-        -- only two possible order files - either generic one or the competition specific one (determined by comp_id)
+    else
+        -- non-exhibition modes: offer comp-kits for this competition only, if availble.
+        -- if not: fall back onto default ones.
 
         -- players
         local pt = load_collections(path, "order.ini", comp_prefix or "default")
@@ -948,10 +935,10 @@ function m.get_filepath(ctx, filename, key)
 end
 
 function m.key_up(ctx, vkey)
-    if vkey == MODIFIER_VKEY1 then
+    if vkey == MODIFIER1_VKEY then
         _modifier1_on = nil
 
-    elseif vkey == MODIFIER_VKEY2 then
+    elseif vkey == MODIFIER2_VKEY then
         _modifier2_on = nil
 
     elseif config_editor_on and (vkey == PREV_VALUE_KEY or vkey == NEXT_VALUE_KEY) then
@@ -990,19 +977,19 @@ local function advance(curr_kit, num_kits)
 end
 
 function m.key_down(ctx, vkey)
-    if vkey == MODIFIER_VKEY1 then
+    if vkey == MODIFIER1_VKEY then
         _modifier1_on = true
 
-    elseif vkey == MODIFIER_VKEY2 then
+    elseif vkey == MODIFIER2_VKEY then
         _modifier2_on = true
 
-    elseif vkey == 0x30 then
+    elseif vkey == RELOAD_MAP_VKEY then
         kmap = load_map(kroot .. "\\map.txt")
         log("Reloaded map from: " .. kroot .. "\\map.txt")
         compmap = load_compmap(kroot .. "\\map_comp.txt")
         log("Reloaded competition map from: " .. kroot .. "\\map_comp.txt")
 
-    elseif vkey == 0x32 then
+    elseif vkey == EDITOR_TOGGLE_VKEY then
         if is_edit_mode(ctx) then
             config_editor_on = not config_editor_on
             if config_editor_on then
@@ -1030,7 +1017,7 @@ function m.key_down(ctx, vkey)
             end
         end
 
-    elseif not is_edit_mode(ctx) and vkey == 0x39 then -- player/goalkeeper mode toggle
+    elseif not is_edit_mode(ctx) and vkey == PL_GK_TOGGLE_VKEY then -- player/goalkeeper mode toggle
         if is_gk_mode then
             -- try to switch to players mode
             -- home: update cfg
@@ -1119,7 +1106,7 @@ function m.key_down(ctx, vkey)
             end
         end
 
-    elseif vkey == 0x36 then -- next home kit
+    elseif vkey == NEXT_HOME_KIT_VKEY then -- next home kit
         if not home_kits or not home_gk_kits then
             prep_home_team(ctx)
         end
@@ -1164,7 +1151,7 @@ function m.key_down(ctx, vkey)
                 ctx.kits.refresh(0)
             end
         end
-    elseif not is_edit_mode(ctx) and vkey == 0x37 then -- next away kit
+    elseif not is_edit_mode(ctx) and vkey == NEXT_AWAY_KIT_VKEY then -- next away kit
         if not away_kits or not away_gk_kits then
             prep_away_team(ctx)
         end
@@ -1445,16 +1432,13 @@ local function get_configEd_overlay_states(ctx)
     end
     return ""
 end
--- end kit config editor part ...
 
 function m.overlay_on(ctx)
     if is_edit_mode(ctx) then
         _kit_id, _is_gk = ctx.kits.get_current_kit_id(0)
         return string.format("team:%s, kit:%s | [2] - Editor (%s), [3] - Next menu page, [6] - switch kit, [0] - reload map"
-                -- kit config editor part ...
                 .. "\n" ..
                 get_configEd_overlay_states(ctx),
-                -- end kit config editor part ...
                 _team_id, get_home_kit_path_for(_kit_id, _is_gk),
                 config_editor_on and "ON" or "OFF")
     elseif ctx.home_team and ctx.away_team and ctx.home_team ~=  0x1ffff and ctx.away_team ~= 0x1ffff then
@@ -1474,6 +1458,12 @@ function m.init(ctx)
     if kroot:sub(1,1) == "." then
         kroot = ctx.sider_dir .. kroot
     end
+    if not ctx.kits then
+        log("Your sider does not have support for kit manipulation")
+        log("Upgrade to Sider 5.4.0 or later")
+        return
+    end
+    log(string.format("Kitserver version: %s", m.version))
     kmap = load_map(kroot .. "\\map.txt")
     compmap = load_compmap(kroot .. "\\map_comp.txt")
     ctx.register("overlay_on", m.overlay_on)
