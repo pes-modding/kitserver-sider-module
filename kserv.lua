@@ -6,7 +6,7 @@
 
 local m = {}
 
-m.version = "1.0"
+m.version = "1.0.1"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -925,6 +925,21 @@ function m.make_key(ctx, filename)
     if key then
         --log(string.format("mapped: {%s} ==> {%s}", filename, key))
         return key
+    end
+
+    -- test1
+    local team_id = string.match(filename,"uniform\\team\\(%d+)\\.*%.bin")
+    if team_id then
+        team_id = tonumber(team_id)
+        if ctx.home_team == team_id and home_kits and #home_kits > 0 then
+            log(string.format("using dummy for: %s", filename))
+            return "helpers\\dummy_realUni.bin"
+        elseif ctx.away_team == team_id and away_kits and #away_kits > 0 then
+            log(string.format("using dummy for: %s", filename))
+            return "helpers\\dummy_realUni.bin"
+        end
+    elseif string.match(filename, "\\UniformParameter.bin") then
+        return "helpers\\UniformParameter.bin"
     end
 end
 
