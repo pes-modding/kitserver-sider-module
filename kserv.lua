@@ -2,11 +2,11 @@
 -- Experimental kitserver with GDB
 -- written by juce and zlac
 -- beta-tested by Hawke and Cesc Fabregas
--- requires: sider 5.4.0 or newer
+-- requires: sider 5.4.2 or newer
 
 local m = {}
 
-m.version = "1.0.1"
+m.version = "1.1"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -927,19 +927,17 @@ function m.make_key(ctx, filename)
         return key
     end
 
-    -- test1
+    -- dummy real bins. Game still checks for existence of these files
     local team_id = string.match(filename,"uniform\\team\\(%d+)\\.*%.bin")
     if team_id then
         team_id = tonumber(team_id)
         if ctx.home_team == team_id and home_kits and #home_kits > 0 then
             log(string.format("using dummy for: %s", filename))
-            return "helpers\\dummy_realUni.bin"
+            return "dummy.bin"
         elseif ctx.away_team == team_id and away_kits and #away_kits > 0 then
             log(string.format("using dummy for: %s", filename))
-            return "helpers\\dummy_realUni.bin"
+            return "dummy.bin"
         end
-    elseif string.match(filename, "\\UniformParameter.bin") then
-        return "helpers\\UniformParameter.bin"
     end
 end
 
@@ -1470,15 +1468,22 @@ function m.overlay_on(ctx)
 end
 
 function m.init(ctx)
+    log(string.format("Kitserver version: %s", m.version))
     if kroot:sub(1,1) == "." then
         kroot = ctx.sider_dir .. kroot
     end
     if not ctx.kits then
         log("Your sider does not have support for kit manipulation")
-        log("Upgrade to Sider 5.4.0 or later")
+        log("Upgrade to Sider 5.4.2 or later")
         return
     end
-    log(string.format("Kitserver version: %s", m.version))
+    local dummy = kroot .. "dummy.bin"
+    if not file_exists(dummy) then
+        local f = io.open(dummy, "wb")
+        f:write("\x01" .. string.rep("\x00", 0x77))
+        f:close()
+        log(string.format("created helper file: %s", dummy))
+    end
     kmap = load_map(kroot .. "\\map.txt")
     compmap = load_compmap(kroot .. "\\map_comp.txt")
     ctx.register("overlay_on", m.overlay_on)
