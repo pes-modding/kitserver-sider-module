@@ -6,7 +6,7 @@
 
 local m = {}
 
-m.version = "1.1a"
+m.version = "1.1"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -630,6 +630,15 @@ local function load_collections(path, orderfile, collection_name)
     end
 end
 
+local function check_configs_for_team(team_id)
+    local path = kmap[team_id]
+    if path then
+        local pt = load_collections(path, "order.ini", "default")
+        local gt = load_collections(path, "gk_order.ini", "default")
+        return pt, gt
+    end
+end
+
 local function load_configs_for_team(ctx, team_id)
     -- ctx added for comp_id retrieval
     local path = kmap[team_id]
@@ -939,10 +948,7 @@ function m.make_key(ctx, filename)
             kits, gk_kits = away_kits, away_gk_kits
         else
             -- happens in edit mode, when team ids are not set yet
-            local path = kmap[team_id]
-            if path then
-                kits, gk_kits = load_configs_for_team(ctx, team_id)
-            end
+            kits, gk_kits = check_configs_for_team(team_id)
         end
         if is_gk then
             -- GK kit
