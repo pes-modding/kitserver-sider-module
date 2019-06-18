@@ -6,7 +6,7 @@
 
 local m = {}
 
-m.version = "1.1"
+m.version = "1.2"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -937,30 +937,33 @@ function m.make_key(ctx, filename)
     end
 
     -- dummy real bins. Game still checks for existence of these files
-    local team_id = string.match(filename,"uniform\\team\\(%d+)\\.*_realUni%.bin")
-    if team_id then
-        team_id = tonumber(team_id)
-        local is_gk = string.match(filename,"\\.*_GK1st_realUni%.bin")
-        local kits, gk_kits
-        if ctx.home_team == team_id then
-            kits, gk_kits = home_kits, home_gk_kits
-        elseif ctx.away_team == team_id then
-            kits, gk_kits = away_kits, away_gk_kits
-        else
-            -- happens in edit mode, when team ids are not set yet
-            kits, gk_kits = check_configs_for_team(team_id)
-        end
-        if is_gk then
-            -- GK kit
-            if gk_kits and #gk_kits > 0 then
-                log(string.format("using dummy for: %s", filename))
-                return "dummy.bin"
+    if string.match(filename,  "_realUni%.bin$") then
+        local team_id, ktyp, knum = string.match(filename,"uniform\\team\\(%d+)\\.*(..)(%d)%w%w_realUni%.bin")
+        team_id, knum = tonumber(team_id), tonumber(knum)
+        if team_id and knum and knum <= 2 then
+            -- only serve dummy bins for 1st/2nd player and for GK1st
+            local is_gk = ktype == "GK"
+            local kits, gk_kits
+            if ctx.home_team == team_id then
+                kits, gk_kits = home_kits, home_gk_kits
+            elseif ctx.away_team == team_id then
+                kits, gk_kits = away_kits, away_gk_kits
+            else
+                -- happens in edit mode, when team ids are not set yet
+                kits, gk_kits = check_configs_for_team(team_id)
             end
-        else
-            -- PL kit
-            if kits and #kits > 0 then
-                log(string.format("using dummy for: %s", filename))
-                return "dummy.bin"
+            if is_gk then
+                -- GK kit
+                if gk_kits and #gk_kits >= knum then
+                    log(string.format("using dummy for: %s", filename))
+                    return "dummy.bin"
+                end
+            else
+                -- PL kit
+                if kits and #kits >= knum then
+                    log(string.format("using dummy for: %s", filename))
+                    return "dummy.bin"
+                end
             end
         end
     end
