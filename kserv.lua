@@ -6,7 +6,7 @@
 
 local m = {}
 
-m.version = "1.2"
+m.version = "1.3"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -208,11 +208,12 @@ local overlay_states = {
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Name y: %d", prop = "NameY", page = 1, col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 16  },
+    { ui = "Name y: %d", prop = "NameY", page = 1, col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 19  },
     { ui = "Name size: %d", prop = "NameSize", page = 1, col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 20  },
     { ui = "Back number size: %d", prop = "BackNumberSize", page = 1, col = 3, row = 5, decr = -1, incr = 1, min = 0, max = 28 },
     { ui = "Back number y: %d", prop = "BackNumberY", page = 1, col = 3, row = 6, decr = -1, incr = 1, min = 0, max = 29  },
-    { ui = "Back number spacing: %d", prop = "BackNumberSpacing", page = 1, col = 3, row = 7, decr = -1, incr = 1, min = 0, max = 3  },
+    { ui = "Back number spacing: %d", prop = "BackNumberSpacing", page = 1, col = 3, row = 7, decr = -1, incr = 1, min = 0, max = 15  },
+    { ui = "Back number type: %d", prop = "BackNumberType", page = 1, col = 3, row = 8, decr = -1, incr = 1, min = 0, max = 1, def = 0  },
 
     { ui = "Badge (Right,Short,X): %d", prop = "RightShortX", page = 1, col = 4, row = 1, decr = -1, incr = 1, min = 0, max = 31  },
     { ui = "Badge (Right,Short,Y): %d", prop = "RightShortY", page = 1, col = 4, row = 2, decr = -1, incr = 1, min = 0, max = 31  },
@@ -370,7 +371,7 @@ local function build_grid_menu(team_id, kit_path, cfg)
                     if ui_line then
                         local curr_cfg = cfg and cfg or configEd_settings[team_id][kit_path]
                         -- local prop_configEd_val = configEd_settings[team_id][kit_path][ui_line.prop]
-                        local prop_configEd_val = curr_cfg[ui_line.prop]
+                        local prop_configEd_val = curr_cfg[ui_line.prop] or ui_line.def
                         if ui_line.keys then
                             local inv_keys = tableInvert(ui_line.keys)
                             prop_configEd_val = inv_keys[prop_configEd_val]
@@ -1274,7 +1275,7 @@ function m.key_down(ctx, vkey)
             local team_id = ctx.kits.get_current_team(0)
             if s.incr ~= nil and team_id then
                 if s.subprop and s.subprop_type == "COLOR" then
-                    local curr_color = configEd_settings[team_id][curr[1]][s.prop]
+                    local curr_color = configEd_settings[team_id][curr[1]][s.prop] or s.def
                     -- extract current sub-color from color string
                     local subprop_colors = get_subprop_colors(curr_color, s)
                     local curr_sub_color = subprop_colors[s.subprop] -- s.subprop used as key is either "R" or "G" or "B"
@@ -1284,14 +1285,15 @@ function m.key_down(ctx, vkey)
                     local new_color = update_subprop_colors(curr_color, curr_sub_color, s)
                     configEd_settings[team_id][curr[1]][s.prop] = new_color
                 else
-                    configEd_settings[team_id][curr[1]][s.prop] = math.min(configEd_settings[team_id][curr[1]][s.prop] + s.incr, s.max)
+                    local v = configEd_settings[team_id][curr[1]][s.prop] or s.def
+                    configEd_settings[team_id][curr[1]][s.prop] = math.min(v + s.incr, s.max)
                 end
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 --update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, false)
                 build_grid_menu(team_id, curr[1])
             elseif s.nextf ~= nil and team_id then
-                local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
+                local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop] or s.def]
                 -- log("curr_disp_val: " .. curr_disp_val)
                 local disp_val, conf_val = s.nextf(s.keys, s.vals, curr_disp_val)
                 -- log("disp_val (next): " .. disp_val .. " conf_val (next): " .. conf_val)
@@ -1316,7 +1318,7 @@ function m.key_down(ctx, vkey)
             if s.decr ~= nil and team_id then
                 -- configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
                 if s.subprop and s.subprop_type == "COLOR" then
-                    local curr_color = configEd_settings[team_id][curr[1]][s.prop]
+                    local curr_color = configEd_settings[team_id][curr[1]][s.prop] or s.def
                     -- extract current sub-color from color string
                     local subprop_colors = get_subprop_colors(curr_color, s)
                     local curr_sub_color = subprop_colors[s.subprop] -- s.subprop used as key is either "R" or "G" or "B"
@@ -1326,14 +1328,15 @@ function m.key_down(ctx, vkey)
                     local new_color = update_subprop_colors(curr_color, curr_sub_color, s)
                     configEd_settings[team_id][curr[1]][s.prop] = new_color
                 else
-                    configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, configEd_settings[team_id][curr[1]][s.prop] + s.decr)
+                    local v = configEd_settings[team_id][curr[1]][s.prop] or s.def
+                    configEd_settings[team_id][curr[1]][s.prop] = math.max(s.min, v + s.decr)
                 end
                 local cfg = table_copy(configEd_settings[team_id][curr[1]])
                 --update(team_id, kit_ord, curr[1], cfg)
                 apply_changes(team_id, kits[kit_ord], cfg, false)
                 build_grid_menu(team_id, curr[1])
             elseif s.prevf ~= nil and team_id then
-                local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop]]
+                local curr_disp_val = tableInvert(s.keys)[configEd_settings[team_id][curr[1]][s.prop] or s.def]
                 -- log("curr_disp_val: " .. curr_disp_val)
                 local disp_val, conf_val = s.prevf(s.keys, s.vals, curr_disp_val)
                 -- log("disp_val (prev): " .. disp_val .. " conf_val (prev): " .. conf_val)
