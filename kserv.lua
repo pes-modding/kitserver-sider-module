@@ -58,6 +58,7 @@ local ks_player_formats = {
     LegNumbersFile = "k%dp%d_l",
     BackNumbersFile = "k%dp%d_b",
     NameFontFile = "k%dp%d_n",
+    NameFontFile_ex = "k%dp%d_n_ex",
 }
 local ks_gk_formats = {
     KitFile = "k%dg%d",
@@ -66,10 +67,11 @@ local ks_gk_formats = {
     LegNumbersFile = "k%dg%d_l",
     BackNumbersFile = "k%dg%d_b",
     NameFontFile = "k%dg%d_n",
+    NameFontFile_ex = "k%dg%d_n_ex",
 }
 local filename_keys = {
     "KitFile", "KitFile_srm", "ChestNumbersFile",
-    "LegNumbersFile", "BackNumbersFile", "NameFontFile",
+    "LegNumbersFile", "BackNumbersFile", "NameFontFile", "NameFontFile_ex",
 }
 
 local kfile_remap = {}
@@ -559,7 +561,7 @@ end
 local function apply_changes(team_id, ki, cfg, save_to_disk)
     local excludes = {
         KitFile=1, KitFile_srm=1, ChestNumbersFile=1,
-        BackNumbersFile=1, LegNumbersFile=1, NameFontFile=1,
+        BackNumbersFile=1, LegNumbersFile=1, NameFontFile=1, NameFontFile_ex=1,
     }
     for k,v in pairs(cfg) do
         if not excludes[k] then
@@ -798,6 +800,13 @@ local function update_kit_config(team_id, kit_ord, kit_path, cfg)
     if cfg.KitFile and not cfg.KitFile_srm then
         cfg.KitFile_srm = cfg.KitFile .. "_srm"
     end
+    -- insert _ex property, if not there
+    -- (Standard configs do not have it, because the game
+    -- just adds an "_ex" suffix to NameFontFile. But because
+    -- we are remapping names, we need to account for that)
+    if cfg.NameFontFile and not cfg.NameFontFile_ex then
+        cfg.NameFontFile_ex = cfg.NameFontFile .. "_ex"
+    end
     -- trick: mangle the filenames so that we can livecpk them later
     -- (only do that for files that actually exist in kitserver content)
     kit_ord = kit_ord or (kit_path == "p2" and 2 or 1)
@@ -811,6 +820,13 @@ local function update_gk_kit_config(team_id, kit_ord, kit_path, cfg)
     -- we are remapping names, we need to account for that)
     if cfg.KitFile and not cfg.KitFile_srm then
         cfg.KitFile_srm = cfg.KitFile .. "_srm"
+    end
+    -- insert _ex property, if not there
+    -- (Standard configs do not have it, because the game
+    -- just adds an "_ex" suffix to NameFontFile. But because
+    -- we are remapping names, we need to account for that)
+    if cfg.NameFontFile and not cfg.NameFontFile_ex then
+        cfg.NameFontFile_ex = cfg.NameFontFile .. "_ex"
     end
     -- trick: mangle the filenames so that we can livecpk them later
     -- (only do that for files that actually exist in kitserver content)
