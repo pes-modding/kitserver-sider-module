@@ -166,20 +166,20 @@ local SWITCH_MENU_PAGE = 0x33
 local overlay_curr = 1
 local overlay_page = 1
 local overlay_states = {
-    { ui = "Short sleeves model: %d", prop = "ShortSleevesModel", page = 1, col = 1, row = 1, decr = -1, incr = 1, min = 1, max = 1  },
+    { ui = "Short sleeves model: %d", prop = "ShortSleevesModel", page = 1, col = 1, row = 1, decr = -1, incr = 1, min = 1, max = 2  },
     { ui = "Shirt model: %s", prop = "ShirtModel", page = 1, col = 1, row = 2,
         vals = {"144", "151=Semi-long", "160", "176=Legacy"}, keys = {["144"] = 144, ["151=Semi-long"] = 151, ["160"] = 160, ["176=Legacy"] = 176},
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Collar: %d", prop = "Collar", page = 1, col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 127  },
+    { ui = "Collar: %d", prop = "Collar", page = 1, col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 130  },
     { ui = "Tight kit: %s", prop = "TightKit", page = 1, col = 1, row = 4,
         vals = {"Off", "On"}, keys = {["Off"] = 0, ["On"] = 1},
         nextf = rot_left,
         prevf = rot_right,
     },
     { ui = "Shirt pattern: %d", prop = "ShirtPattern", page = 1, col = 1, row = 5, decr = -1, incr = 1, min = 0, max = 6  },
-    { ui = "Winter collar: %d", prop = "WinterCollar", page = 1, col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 127  },
+    { ui = "Winter collar: %d", prop = "WinterCollar", page = 1, col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 130  },
     { ui = "Long sleeves: %s", prop = "LongSleevesType", page = 1, col = 1, row = 7,
         vals = {"Normal&U-Shirt", "Only Undershirt"}, keys = {["Normal&U-Shirt"] = 62, ["Only Undershirt"] = 187},
         nextf = rot_left,
