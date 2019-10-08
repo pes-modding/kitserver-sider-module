@@ -1,8 +1,8 @@
 -- kserv.lua
 -- Experimental kitserver with GDB
 -- written by juce and zlac
--- beta-tested by Hawke and Cesc Fabregas
--- requires: sider 5.4.2 or newer
+-- beta-tested by Hawke, Cesc Fabregas, mota10
+-- requires: sider 6.2.0 or newer
 
 local m = {}
 
@@ -785,7 +785,7 @@ local function config_update_filenames(team_id, ord, kit_path, kit_cfg, formats)
                 local fmt = formats[k]
                 if fmt then
                     local fkey = string.format(fmt, team_id, ord)
-                    kfile_remap[string.format("Asset\\model\\character\\uniform\\texture\\#windx11\\%s.ftex", fkey)] = pathname
+                    kfile_remap[string.format("%s.ftex", fkey)] = pathname
                     kit_cfg[k] = fkey
                 end
             end
@@ -948,14 +948,15 @@ end
 
 function m.make_key(ctx, filename)
     --log("wants: " .. filename)
-    local key = kfile_remap[filename]
+    local fname = string.match(filename, ".*\\(.*)")
+    local key = fname and kfile_remap[fname] or nil
     if key then
         --log(string.format("mapped: {%s} ==> {%s}", filename, key))
         return key
     end
 
     -- dummy real bins. Game still checks for existence of these files
-    if string.match(filename,  "_realUni%.bin$") then
+    if fname and string.match(fname, "_realUni%.bin$") then
         local team_id, ktyp, knum = string.match(filename,"uniform\\team\\(%d+)\\.*(..)(%d)%w%w_realUni%.bin")
         team_id, knum = tonumber(team_id), tonumber(knum)
         if team_id and knum and knum <= 2 then
@@ -1522,7 +1523,7 @@ function m.init(ctx)
     end
     if not ctx.kits then
         log("Your sider does not have support for kit manipulation")
-        log("Upgrade to Sider 5.4.2 or later")
+        log("Upgrade to Sider 6.2.0 or later")
         return
     end
     local dummy = kroot .. "dummy.bin"
