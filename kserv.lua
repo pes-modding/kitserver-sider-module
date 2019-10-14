@@ -6,7 +6,7 @@
 
 local m = {}
 
-m.version = "1.3"
+m.version = "1.4"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -418,7 +418,7 @@ local function get_home_kit_ord_for(kit_id, is_gk)
     if not kit_id then
         return
     end
-    local ord = is_gk and home_gk_loaded_for[kit_id] or home_loaded_for[kit_id]
+    local ord = is_gk and home_gk_loaded_for[0] or home_loaded_for[kit_id]
     local kits = is_gk and home_gk_kits or home_kits
     return ord or (kits and kits[kit_id+1] and kit_id+1)
 end
@@ -427,10 +427,10 @@ local function get_home_kit_path_for(kit_id, is_gk)
     if not kit_id then
         return
     end
-    local ord = is_gk and home_gk_loaded_for[kit_id] or home_loaded_for[kit_id]
+    local ord = is_gk and home_gk_loaded_for[0] or home_loaded_for[kit_id]
     local kits = is_gk and home_gk_kits or home_kits
     local kit_path = kits and kits[ord] and kits[ord][1]
-    kit_path = kit_path or (is_gk and standard_gk_kits[kit_id+1] or standard_kits[kit_id+1])
+    kit_path = kit_path or (is_gk and standard_gk_kits[1] or standard_kits[kit_id+1])
     return kit_path
 end
 
@@ -438,10 +438,10 @@ local function get_away_kit_path_for(kit_id, is_gk)
     if not kit_id then
         return
     end
-    local ord = is_gk and away_gk_loaded_for[kit_id] or away_loaded_for[kit_id]
+    local ord = is_gk and away_gk_loaded_for[0] or away_loaded_for[kit_id]
     local kits = is_gk and away_gk_kits or away_kits
     local kit_path = kits and kits[ord] and kits[ord][1]
-    kit_path = kit_path or (is_gk and standard_gk_kits[kit_id+1] or standard_kits[kit_id+1])
+    kit_path = kit_path or (is_gk and standard_gk_kits[1] or standard_kits[kit_id+1])
     return kit_path
 end
 
