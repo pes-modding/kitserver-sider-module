@@ -6,7 +6,7 @@
 
 local m = {}
 
-m.version = "1.4"
+m.version = "1.45"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -994,6 +994,34 @@ function m.get_filepath(ctx, filename, key)
     end
 end
 
+function m.data_ready(ctx, filename, addr, len, total_size, offset)
+    if filename == "common\\etc\\pesdb\\Team.bin" then
+        log(string.format("addr: %s", addr))
+        local data = memory.read(addr, len)
+        data = zlib.unpack(data)
+        local p = 1
+        local q = #data
+        log(string.format("p:%s, q:%s", p, q))
+        while p < q do
+            --log(string.format("p now: %s", p))
+            local team_id = memory.unpack("i32", data:sub(p + 8, p + 11))
+            local licensed_flag = data:sub(p + 0x54, p + 0x54)
+            --log(string.format("team: %d, licensed_flag: %s", team_id, memory.hex(licensed_flag)))
+            if licensed_flag == "\x04" then
+                if kmap[team_id] then
+                    -- we have kits for this team, but the team is unlicensed.
+                    -- Drop the kits from GDB so that we don't run into bad scenarios
+                    -- such as erroneous kit color-matching and such
+                    log(string.format("Team %d is in the map, but it is unlicensed. Dropping from GDB", team_id))
+                    kmap[team_id] = nil
+                end
+            end
+            -- move on to next team
+            p = p + 0x5fc
+        end
+    end
+end
+
 function m.key_up(ctx, vkey)
     if vkey == MODIFIER1_VKEY then
         _modifier1_on = nil
@@ -1508,8 +1536,8 @@ function m.overlay_on(ctx)
         local akid = ctx.kits.get_current_kit_id(1)
         local hk = get_home_kit_path_for(hkid, is_gk_mode)
         local ak = get_away_kit_path_for(akid, is_gk_mode)
-        return string.format("%s | %s:%s vs %s:%s | [6][7] - switch kits, [9] - PL/GK, [0] - reload map",
-            modes[is_gk_mode and 2 or 1], ctx.home_team, hk, ctx.away_team, ak)
+        return string.format("tid: %s | %s | %s:%s vs %s:%s | [6][7] - switch kits, [9] - PL/GK, [0] - reload map",
+            ctx.tournament_id, modes[is_gk_mode and 2 or 1], ctx.home_team, hk, ctx.away_team, ak)
     else
         return string.format("%s | [6][7] - switch kits, [9] - PL/GK, [0] - reload map",
             modes[is_gk_mode and 2 or 1])
@@ -1544,6 +1572,7 @@ function m.init(ctx)
     ctx.register("after_set_conditions", m.finalize_kits)
     ctx.register("livecpk_make_key", m.make_key)
     ctx.register("livecpk_get_filepath", m.get_filepath)
+    ctx.register("livecpk_data_ready", m.data_ready)
 
     grid_menu_rows, grid_menu_cols, grid_menu_pages = get_grid_menu_params()
 end
