@@ -22,6 +22,7 @@ local away_next_kit
 local home_next_gk_kit
 local away_next_gk_kit
 
+local gk_initial_choice
 local is_gk_mode = false
 local modes = { "PLAYERS", "GOALKEEPERS" }
 
@@ -944,6 +945,9 @@ function m.set_kits(ctx, home_info, away_info)
     if away_kits and #away_kits > 0 then
         away_next_kit = ctx.kits.get_current_kit_id(1) + 1
     end
+
+    -- reset GK kit autoselection flag
+    gk_initial_choice = true
 end
 
 function m.make_key(ctx, filename)
@@ -1064,6 +1068,79 @@ local function advance(curr_kit, num_kits)
     end
 end
 
+local function txt_color_to_rgb(clr)
+    log(string.format("txt_color_to_rgb:: clr = %s", clr))
+    local r = tonumber(clr:sub(2,3), 16)
+    local g = tonumber(clr:sub(4,5), 16)
+    local b = tonumber(clr:sub(6,7), 16)
+    if r and g and b then
+        return {r,g,b}
+    end
+end
+
+local function avg_color(clr1, clr2)
+    local c1 = txt_color_to_rgb(clr1)
+    local c2 = txt_color_to_rgb(clr2)
+    if c1 and c2 then
+        return {0.5*(c1[1]+c2[1]), 0.5*(c1[2]+c2[2]), 0.5*(c1[3]+c2[3])}
+    end
+    return {0,0,0}
+end
+
+local function color_distance(c1, c2)
+    return math.abs(c1[1]-c2[1]) + math.abs(c1[2]-c2[2]) + math.abs(c1[3]-c2[3])
+end
+
+local function avg_color_distance(clr, t)
+    local diff_sum = 0
+    for i,v in ipairs(t) do
+        diff_sum = diff_sum + color_distance(clr, v)
+    end
+    return diff_sum / #t
+end
+
+local function choose_gk_kits(ctx)
+    local id
+    id = ctx.kits.get_current_kit_id(0)
+    local p_home = ctx.kits.get(ctx.home_team, id)
+    local clr1 = avg_color(p_home.ShirtColor1, p_home.ShirtColor2)
+    id = ctx.kits.get_current_kit_id(1)
+    local p_away = ctx.kits.get(ctx.away_team, id)
+    local clr2 = avg_color(p_away.ShirtColor1, p_away.ShirtColor2)
+
+    -- start with 1st GK kit for each team
+    local gk_home = home_next_gk_kit
+    local gk_away = away_next_gk_kit
+
+    -- choose optimal home GK kit (if several exist)
+    if home_gk_kits and #home_gk_kits > 1 then
+        local scores = {}
+        for i,v in ipairs(home_gk_kits) do
+            local clr = avg_color(v[2].ShirtColor1, v[2].ShirtColor2)
+            scores[#scores + 1] = {i, avg_color_distance(clr, {clr1, clr2})}
+            log(string.format("home gk kit: %s, avg_color_distance: %s", scores[#scores][1], scores[#scores][2]))
+        end
+        table.sort(scores, function(a,b)
+            return a[2] > b[2]
+        end)
+        gk_home = scores[1][1]
+    end
+    -- choose optimal away GK kit (if several exist)
+    if away_gk_kits and #away_gk_kits > 1 then
+        local scores = {}
+        for i,v in ipairs(away_gk_kits) do
+            local clr = avg_color(v[2].ShirtColor1, v[2].ShirtColor2)
+            scores[#scores + 1] = {i, avg_color_distance(clr, {clr1, clr2})}
+            log(string.format("away gk kit: %s, avg_color_distance: %s", scores[#scores][1], scores[#scores][2]))
+        end
+        table.sort(scores, function(a,b)
+            return a[2] > b[2]
+        end)
+        gk_away = scores[1][1]
+    end
+    return gk_home, gk_away
+end
+
 function m.key_down(ctx, vkey)
     if vkey == MODIFIER1_VKEY then
         _modifier1_on = true
@@ -1156,10 +1233,16 @@ function m.key_down(ctx, vkey)
             end
         else
             -- try to switch to goalkeepers mode
+            if gk_initial_choice then
+                gk_initial_choice = false
+                home_next_gk_kit, away_next_gk_kit = choose_gk_kits(ctx)
+                home_gk_loaded_for[0] = home_next_gk_kit
+                away_gk_loaded_for[0] = away_next_gk_kit
+            end
             -- home: update cfg
             if home_gk_kits and #home_gk_kits > 0 then
                 local curr = home_gk_kits[home_next_gk_kit]
-                log(string.format("GK home: %s", curr))
+                log(string.format("GK home: %s", t2s(curr)))
                 if curr and curr[2] then
                     -- we have a home GK kit
                     local cfg = table_copy(curr[2])
@@ -1177,7 +1260,7 @@ function m.key_down(ctx, vkey)
             -- away: update cfg
             if away_gk_kits and #away_gk_kits > 0 then
                 local curr = away_gk_kits[away_next_gk_kit]
-                log(string.format("GK away: %s", curr))
+                log(string.format("GK away: %s", t2s(curr)))
                 if curr and curr[2] then
                     -- we have an away GK kit
                     local cfg = table_copy(curr[2])
@@ -1407,6 +1490,13 @@ function m.finalize_kits(ctx)
     log("finalizing kits ...")
     is_gk_mode = false
     -- goalkeepers
+    if gk_initial_choice then
+        gk_initial_choice = false
+        -- if GK kits were not explicitly chosen, auto-select based on color-matching
+        home_next_gk_kit, away_next_gk_kit = choose_gk_kits(ctx)
+        home_gk_loaded_for[0] = home_next_gk_kit
+        away_gk_loaded_for[0] = away_next_gk_kit
+    end
     if home_gk_kits and #home_gk_kits > 0 then
         local curr = home_gk_kits[home_next_gk_kit]
         if curr then
