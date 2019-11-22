@@ -6,11 +6,15 @@
 
 local m = {}
 
-m.version = "1.45"
+m.version = "1.5"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
 local compmap
+local config
+local default_config = {
+    auto_select_gk = 1
+}
 
 local home_kits
 local away_kits
@@ -1112,6 +1116,11 @@ local function choose_gk_kits(ctx)
     local gk_home = home_next_gk_kit
     local gk_away = away_next_gk_kit
 
+    if config.auto_select_gk == 0 then
+        -- autoselect is explicitly disabled
+        return gk_home, gk_away
+    end
+
     -- choose optimal home GK kit (if several exist)
     if home_gk_kits and #home_gk_kits > 1 then
         local scores = {}
@@ -1651,6 +1660,8 @@ function m.init(ctx)
         f:close()
         log(string.format("created helper file: %s", dummy))
     end
+    config = load_config(kroot .. "config.txt") or default_config
+    log(string.format("config: %s", t2s(config)))
     kmap = load_map(kroot .. "\\map.txt")
     compmap = load_compmap(kroot .. "\\map_comp.txt")
     ctx.register("overlay_on", m.overlay_on)
