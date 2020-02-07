@@ -6,7 +6,7 @@
 
 local m = {}
 
-m.version = "1.5"
+m.version = "1.6"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -193,7 +193,7 @@ local overlay_states = {
 
     { ui = "Chest number size: %d", prop = "ChestNumberSize", page = 1, col = 2, row = 1, decr = -1, incr = 1, min = 0, max = 28 },
     { ui = "Chest number x: %d", prop = "ChestNumberX", page = 1, col = 2, row = 2, decr = -1, incr = 1, min = 0, max = 29  },
-    { ui = "Chest number y: %d", prop = "ChestNumberY", page = 1, col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 6  },
+    { ui = "Chest number y: %d", prop = "ChestNumberY", page = 1, col = 2, row = 3, decr = -1, incr = 1, min = 0, max = 29  },
 
     { ui = "Shorts model: %d", prop = "ShortsModel", page = 1, col = 2, row = 4, decr = -1, incr = 1, min = 0, max = 17  },
     { ui = "Shorts number size: %d", prop = "ShortsNumberSize", page = 1, col = 2, row = 5, decr = -1, incr = 1, min = 0, max = 28  },
@@ -215,7 +215,7 @@ local overlay_states = {
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Name y: %d", prop = "NameY", page = 1, col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 19  },
+    { ui = "Name y: %d", prop = "NameY", page = 1, col = 3, row = 3, decr = -1, incr = 1, min = 0, max = 39  },
     { ui = "Name size: %d", prop = "NameSize", page = 1, col = 3, row = 4, decr = -1, incr = 1, min = 0, max = 20  },
     { ui = "Name stretch: %d", prop = "NameStretch", page = 1, col = 3, row = 5, decr = -1, incr = 1, min = 0, max = 3, def = 0 },
     { ui = "Back number size: %d", prop = "BackNumberSize", page = 1, col = 3, row = 6, decr = -1, incr = 1, min = 0, max = 28 },
