@@ -6,7 +6,7 @@
 
 local m = {}
 
-m.version = "1.6"
+m.version = "1.7"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -615,7 +615,7 @@ local function load_collections(path, orderfile, collection_name)
                             -- part oh the badge handling routine:
                             -- let's tag this config as competition-specific if it is not part of default collection
                             if collection ~= "default" then
-                                cfg.CompKit = true
+                                cfg.CompKit = collection
                                 -- log("kit " .. t2s(cfg) .. " tagged as CompKit.")
                                 -- trick: turn the badge off
                                 cfg.RightShortX = 31
@@ -1103,13 +1103,23 @@ local function avg_color_distance(clr, t)
     return diff_sum / #t
 end
 
+local function min_color_distance(clr, t)
+    local min_dist = 0xff + 0xff + 0xff
+    for i,v in ipairs(t) do
+        local d = color_distance(clr, v)
+        if d < min_dist then
+            min_dist = d
+        end
+    end
+    return min_dist
+end
+
 local function choose_gk_kits(ctx)
-    local id
-    id = ctx.kits.get_current_kit_id(0)
-    local p_home = ctx.kits.get(ctx.home_team, id)
+    local hkid = ctx.kits.get_current_kit_id(0)
+    local p_home = ctx.kits.get(ctx.home_team, hkid)
     local clr1 = avg_color(p_home.ShirtColor1, p_home.ShirtColor2)
-    id = ctx.kits.get_current_kit_id(1)
-    local p_away = ctx.kits.get(ctx.away_team, id)
+    local akid = ctx.kits.get_current_kit_id(1)
+    local p_away = ctx.kits.get(ctx.away_team, akid)
     local clr2 = avg_color(p_away.ShirtColor1, p_away.ShirtColor2)
 
     -- start with 1st GK kit for each team
@@ -1121,26 +1131,81 @@ local function choose_gk_kits(ctx)
         return gk_home, gk_away
     end
 
+    -- determinte which group player kits belong to
+    local hk = get_home_kit_path_for(hkid)
+    local hk_group = nil
+    if home_kits and #home_kits > 0 then
+        for i,v in ipairs(home_kits) do
+            if v[1] == hk then
+                hk_group = v[2].CompKit
+                break
+            end
+        end
+    end
+    local ak = get_away_kit_path_for(akid)
+    local ak_group = nil
+    if away_kits and #away_kits > 0 then
+        for i,v in ipairs(away_kits) do
+            if v[1] == ak then
+                ak_group = v[2].CompKit
+                break
+            end
+        end
+    end
+    log(string.format("hk=%s, hk_group=%s", hk, hk_group))
+    log(string.format("ak=%s, ak_group=%s", ak, ak_group))
+
+    local colors_to_compare = {clr1, clr2}
+
+    -- try to limit GK kits eligible for automatic selection
+    -- to only the ones that match the player kit subset (league, cup, ucl, etc.)
+    -- (this comes into play in Exhibition mode only, basically, because
+    -- in cup modes, player and gk kits are already filtered)
+    local hgk_indices, hgk_filtered = {}, false
+    if home_gk_kits and #home_gk_kits > 0 then
+        for i,v in ipairs(home_gk_kits) do
+            if v[2].CompKit == hk_group then
+                hgk_indices[i] = true
+                hgk_filtered = true
+            end
+        end
+    end
+    local agk_indices, agk_filtered = {}, false
+    if away_gk_kits and #away_gk_kits > 0 then
+        for i,v in ipairs(away_gk_kits) do
+            if v[2].CompKit == ak_group then
+                agk_indices[i] = true
+                agk_filtered = true
+            end
+        end
+    end
+
     -- choose optimal home GK kit (if several exist)
     if home_gk_kits and #home_gk_kits > 1 then
         local scores = {}
         for i,v in ipairs(home_gk_kits) do
-            local clr = avg_color(v[2].ShirtColor1, v[2].ShirtColor2)
-            scores[#scores + 1] = {i, avg_color_distance(clr, {clr1, clr2})}
-            log(string.format("home gk kit: %s, avg_color_distance: %s", scores[#scores][1], scores[#scores][2]))
+            if not hgk_filtered or hgk_indices[i] then
+                local clr = avg_color(v[2].ShirtColor1, v[2].ShirtColor2)
+                scores[#scores + 1] = {i, min_color_distance(clr, colors_to_compare), clr}
+                log(string.format("home gk kit: %s (%s), min_color_distance: %s", scores[#scores][1], v[1], scores[#scores][2]))
+            end
         end
         table.sort(scores, function(a,b)
             return a[2] > b[2]
         end)
         gk_home = scores[1][1]
+        colors_to_compare = {clr1, clr2, scores[1][3]}
     end
     -- choose optimal away GK kit (if several exist)
     if away_gk_kits and #away_gk_kits > 1 then
         local scores = {}
+        local clr3 = gk_home
         for i,v in ipairs(away_gk_kits) do
-            local clr = avg_color(v[2].ShirtColor1, v[2].ShirtColor2)
-            scores[#scores + 1] = {i, avg_color_distance(clr, {clr1, clr2})}
-            log(string.format("away gk kit: %s, avg_color_distance: %s", scores[#scores][1], scores[#scores][2]))
+            if not agk_filtered or agk_indices[i] then
+                local clr = avg_color(v[2].ShirtColor1, v[2].ShirtColor2)
+                scores[#scores + 1] = {i, min_color_distance(clr, colors_to_compare)}
+                log(string.format("away gk kit: %s (%s), min_color_distance: %s", scores[#scores][1], v[1], scores[#scores][2]))
+            end
         end
         table.sort(scores, function(a,b)
             return a[2] > b[2]
