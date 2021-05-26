@@ -479,15 +479,15 @@ local function load_compmap(filename)
         -- strip comment
         line = string.gsub(line, "#.*", "")
         -- allow only ONE word - alphanumerics, underscore and hyphen -- is there better pattern to do that?
-        local tid, mi, path = string.match(line, "%s*(%d+):?(%d*)%s*,%s*([%w_-]+)%s*")
+        local tid, path, mi = string.match(line, "%s*(%d+)%s*,%s*([%w_-]+)%s*,?%s*(%d*)")
         tid = tonumber(tid)
         mi = tonumber(mi)
-        if tid and mi and path then
+        if tid and path and mi then
             map[string.format("%s:%s", tid, mi)] = path
-            log(string.format("comp id: %d, match info: %d ==> content prefix: %s", tid, mi, path))
+            log(string.format("comp id: %d, match info: %d ==> kit group: %s", tid, mi, path))
         elseif tid and path then
             map[tid] = path
-            log(string.format("comp id: %d ==> content prefix: %s", tid, path))
+            log(string.format("comp id: %d ==> kit group: %s", tid, path))
         end
     end
     return map
