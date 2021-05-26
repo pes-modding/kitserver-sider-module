@@ -1,12 +1,13 @@
 -- kserv.lua
 -- Experimental kitserver with GDB
 -- written by juce and zlac
+-- modification to support all PES 2021 collars by leoribas26
 -- beta-tested by Hawke, Cesc Fabregas, mota10
 -- requires: sider 6.2.0 or newer
 
 local m = {}
 
-m.version = "1.7"
+m.version = "1.8"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -177,14 +178,14 @@ local overlay_states = {
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Collar: %d", prop = "Collar", page = 1, col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 130  },
+    { ui = "Collar: %d", prop = "Collar", page = 1, col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 135  },
     { ui = "Tight kit: %s", prop = "TightKit", page = 1, col = 1, row = 4,
         vals = {"Off", "On"}, keys = {["Off"] = 0, ["On"] = 1},
         nextf = rot_left,
         prevf = rot_right,
     },
     { ui = "Shirt pattern: %d", prop = "ShirtPattern", page = 1, col = 1, row = 5, decr = -1, incr = 1, min = 0, max = 6  },
-    { ui = "Winter collar: %d", prop = "WinterCollar", page = 1, col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 130  },
+    { ui = "Winter collar: %d", prop = "WinterCollar", page = 1, col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 135  },
     { ui = "Long sleeves: %s", prop = "LongSleevesType", page = 1, col = 1, row = 7,
         vals = {"Normal&U-Shirt", "Only Undershirt"}, keys = {["Normal&U-Shirt"] = 62, ["Only Undershirt"] = 187},
         nextf = rot_left,
