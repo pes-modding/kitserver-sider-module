@@ -479,9 +479,13 @@ local function load_compmap(filename)
         -- strip comment
         line = string.gsub(line, "#.*", "")
         -- allow only ONE word - alphanumerics, underscore and hyphen -- is there better pattern to do that?
-        local tid, path = string.match(line, "%s*(%d+)%s*,%s*([%w_-]*)%s*")
+        local tid, mi, path = string.match(line, "%s*(%d+):?(%d*)%s*,%s*([%w_-]+)%s*")
         tid = tonumber(tid)
-        if tid and path then
+        mi = tonumber(mi)
+        if tid and mi and path then
+            map[string.format("%s:%s", tid, mi)] = path
+            log(string.format("comp id: %d, match info: %d ==> content prefix: %s", tid, mi, path))
+        elseif tid and path then
             map[tid] = path
             log(string.format("comp id: %d ==> content prefix: %s", tid, path))
         end
@@ -654,7 +658,8 @@ local function load_configs_for_team(ctx, team_id)
     local path = kmap[team_id]
 
     local comp_id = ctx.tournament_id and ctx.tournament_id or nil
-    local comp_prefix = compmap[comp_id]
+    local kit_group = compmap[comp_id]
+    local kit_group_mi = compmap[string.format("%s:%s", comp_id, ctx.match_info)]
 
     if not path then
         -- no kits for this team
@@ -692,14 +697,20 @@ local function load_configs_for_team(ctx, team_id)
         -- if not: fall back onto default ones.
 
         -- players
-        local pt = load_collections(path, "order.ini", comp_prefix or "default")
+        local pt = load_collections(path, "order.ini", kit_group_mi)  -- match-specific kits (tid:mi)
+        if not pt then
+            pt  = load_collections(path, "order.ini", kit_group or "default")
+        end
         if not pt then
             pt  = load_collections(path, "order.ini", "default")
         end
         log("not edit/exhibition mode:: all player kits: " .. t2s(pt))
 
         -- goalkeepers
-        local gt = load_collections(path, "gk_order.ini", comp_prefix or "default")
+        local gt = load_collections(path, "gk_order.ini", kit_group_mi) -- match-specific kits (tid:mi)
+        if not gt then
+            gt = load_collections(path, "gk_order.ini", kit_group or "default")
+        end
         if not gt then
             gt = load_collections(path, "gk_order.ini", "default")
         end
