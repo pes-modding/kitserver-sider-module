@@ -7,7 +7,7 @@
 
 local m = {}
 
-m.version = "1.8"
+m.version = "1.9"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -697,7 +697,10 @@ local function load_configs_for_team(ctx, team_id)
         -- if not: fall back onto default ones.
 
         -- players
-        local pt = load_collections(path, "order.ini", kit_group_mi)  -- match-specific kits (tid:mi)
+        local pt
+        if kit_group_mi then
+            pt  = load_collections(path, "order.ini", kit_group_mi)  -- match-specific kits (tid:mi)
+        end
         if not pt then
             pt  = load_collections(path, "order.ini", kit_group or "default")
         end
@@ -707,7 +710,10 @@ local function load_configs_for_team(ctx, team_id)
         log("not edit/exhibition mode:: all player kits: " .. t2s(pt))
 
         -- goalkeepers
-        local gt = load_collections(path, "gk_order.ini", kit_group_mi) -- match-specific kits (tid:mi)
+        local gt
+        if kit_group_mi then
+            gt = load_collections(path, "gk_order.ini", kit_group_mi) -- match-specific kits (tid:mi)
+        end
         if not gt then
             gt = load_collections(path, "gk_order.ini", kit_group or "default")
         end
