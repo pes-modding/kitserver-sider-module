@@ -7,7 +7,7 @@
 
 local m = {}
 
-m.version = "1.9"
+m.version = "1.10"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -1370,7 +1370,7 @@ function m.key_down(ctx, vkey)
         end
 
     elseif vkey == NEXT_HOME_KIT_VKEY then -- next home kit
-        if not home_kits or not home_gk_kits then
+        if not home_kits and not home_gk_kits then
             prep_home_team(ctx)
         end
         if not is_gk_mode and not(is_edit_mode(ctx) and _is_gk) then
@@ -1415,7 +1415,7 @@ function m.key_down(ctx, vkey)
             end
         end
     elseif not is_edit_mode(ctx) and vkey == NEXT_AWAY_KIT_VKEY then -- next away kit
-        if not away_kits or not away_gk_kits then
+        if not away_kits and not away_gk_kits then
             prep_away_team(ctx)
         end
         if not is_gk_mode then
