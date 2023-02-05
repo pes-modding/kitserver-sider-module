@@ -7,7 +7,7 @@
 
 local m = {}
 
-m.version = "1.10"
+m.version = "1.11"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -191,6 +191,11 @@ local overlay_states = {
         nextf = rot_left,
         prevf = rot_right,
     },
+    { ui = "Sleeve limits: %s", prop = "SleeveLimits", page = 1, col = 1, row = 8, def = 0,
+        vals = {"None", "Only long", "Only short"}, keys = {["None"] = 0, ["Only long"] = 1, ["Only short"] = 2},
+        nextf = rot_left,
+        prevf = rot_right,
+    },
 
     { ui = "Chest number size: %d", prop = "ChestNumberSize", page = 1, col = 2, row = 1, decr = -1, incr = 1, min = 0, max = 28 },
     { ui = "Chest number x: %d", prop = "ChestNumberX", page = 1, col = 2, row = 2, decr = -1, incr = 1, min = 0, max = 29  },
@@ -198,8 +203,8 @@ local overlay_states = {
 
     { ui = "Shorts model: %d", prop = "ShortsModel", page = 1, col = 2, row = 4, decr = -1, incr = 1, min = 0, max = 17  },
     { ui = "Shorts number size: %d", prop = "ShortsNumberSize", page = 1, col = 2, row = 5, decr = -1, incr = 1, min = 0, max = 28  },
-    { ui = "Shorts number x: %d", prop = "ShortsNumberX", page = 1, col = 2, row = 6, decr = -1, incr = 1, min = 0, max = 14  },
-    { ui = "Shorts number y: %d", prop = "ShortsNumberY", page = 1, col = 2, row = 7, decr = -1, incr = 1, min = 0, max = 15  },
+    { ui = "Shorts number x: %d", prop = "ShortsNumberX", page = 1, col = 2, row = 6, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Shorts number y: %d", prop = "ShortsNumberY", page = 1, col = 2, row = 7, decr = -1, incr = 1, min = 0, max = 31  },
     { ui = "Shorts number side: %s", prop = "ShortsNumberSide", page = 1, col = 2, row = 8,
         vals = {"Left", "Right"}, keys = {["Left"] = 0, ["Right"] = 1},
         nextf = rot_left,
@@ -258,6 +263,13 @@ local overlay_states = {
     { ui = "UniColor Color2 (G): %s", prop = "UniColor_Color2", subprop = "G", subprop_type = "COLOR", page = 2, col = 4, row = 5, decr = -1, incr = 1, min = 0, max = 255  },
     { ui = "UniColor Color2 (B): %s", prop = "UniColor_Color2", subprop = "B", subprop_type = "COLOR", page = 2, col = 4, row = 6, decr = -1, incr = 1, min = 0, max = 255  },
 
+    { ui = "Unk_0x13_AllBits: %d", prop = "Unk_Offset0x13_AllBits", page = 3, col = 1, row = 1, def = 0, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "Unk_0x1C_Bits0to1: %d", prop = "Unk_Offset0x1C_Bits0to1", page = 3, col = 1, row = 2, def = 0, decr = -1, incr = 1, min = 0, max = 3  },
+    { ui = "Unk_0x23_Bits1to7: %d", prop = "Unk_Offset0x23_Bits1to7", page = 3, col = 1, row = 3, def = 0, decr = -1, incr = 1, min = 0, max = 127  },
+    { ui = "Unk_0x24_Bits0to4: %d", prop = "Unk_Offset0x24_Bits0to4", page = 3, col = 1, row = 4, def = 0, decr = -1, incr = 1, min = 0, max = 31  },
+    { ui = "Unk_0x25_Bits2to7: %d", prop = "Unk_Offset0x25_Bits2to7", page = 3, col = 2, row = 1, def = 0, decr = -1, incr = 1, min = 0, max = 63  },
+    { ui = "Unk_0x26_AllBits: %d", prop = "Unk_Offset0x26_AllBits", page = 3, col = 2, row = 2, def = 0, decr = -1, incr = 1, min = 0, max = 255  },
+    { ui = "Unk_0x27_AllBits: %d", prop = "Unk_Offset0x27_AllBits", page = 3, col = 2, row = 3, def = 0, decr = -1, incr = 1, min = 0, max = 255  },
 }
 local ui_lines = {}
 
@@ -381,6 +393,7 @@ local function build_grid_menu(team_id, kit_path, cfg)
                         local curr_cfg = cfg and cfg or configEd_settings[team_id][kit_path]
                         -- local prop_configEd_val = configEd_settings[team_id][kit_path][ui_line.prop]
                         local prop_configEd_val = curr_cfg[ui_line.prop] or ui_line.def
+                        -- log(string.format('prop_configEd_val (for %s): ', ui_line.ui) .. tostring(prop_configEd_val))
                         if ui_line.keys then
                             local inv_keys = tableInvert(ui_line.keys)
                             prop_configEd_val = inv_keys[prop_configEd_val]
