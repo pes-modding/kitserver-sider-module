@@ -7,14 +7,15 @@
 
 local m = {}
 
-m.version = "1.11"
+m.version = "1.12"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
 local compmap
 local config
 local default_config = {
-    auto_select_gk = 1
+    auto_select_gk = 1,
+    hide_comp_kits_badges = 0,
 }
 
 local home_kits
@@ -635,15 +636,18 @@ local function load_collections(path, orderfile, collection_name)
                             if collection ~= "default" then
                                 cfg.CompKit = collection
                                 -- log("kit " .. t2s(cfg) .. " tagged as CompKit.")
-                                -- trick: turn the badge off
-                                cfg.RightShortX = 31
-                                cfg.RightShortY = 0
-                                cfg.RightLongX = 31
-                                cfg.RightLongY = 0
-                                cfg.LeftShortX = 31
-                                cfg.LeftShortY = 0
-                                cfg.LeftLongX = 31
-                                cfg.LeftLongY = 0
+                                if config.hide_comp_kits_badges == 1 then
+                                    -- trick: turn the badge off.
+                                    -- This assumes that sleeve badges are painted into those kits
+                                    cfg.RightShortX = 31
+                                    cfg.RightShortY = 0
+                                    cfg.RightLongX = 31
+                                    cfg.RightLongY = 0
+                                    cfg.LeftShortX = 31
+                                    cfg.LeftShortY = 0
+                                    cfg.LeftLongX = 31
+                                    cfg.LeftLongY = 0
+                                end
                             end
                             t[#t + 1] = { line, cfg, cfg_org }
                         else
