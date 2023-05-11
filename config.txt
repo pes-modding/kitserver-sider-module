@@ -1,0 +1,6 @@
+# kserv global configuration
+
+auto_select_gk = 1
+hide_comp_kits_badges = 0
+armband_color_match = 1
+armband_light = 0

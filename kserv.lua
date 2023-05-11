@@ -7,7 +7,7 @@
 
 local m = {}
 
-m.version = "1.12"
+m.version = "1.13"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -16,6 +16,8 @@ local config
 local default_config = {
     auto_select_gk = 1,
     hide_comp_kits_badges = 0,
+    armband_color_match = 1,
+    armband_light = 0,
 }
 
 local home_kits
@@ -833,6 +835,79 @@ local function config_update_filenames(team_id, ord, kit_path, kit_cfg, formats)
     end
 end
 
+local function txt_color_to_rgb(clr)
+    log(string.format("txt_color_to_rgb:: clr = %s", clr))
+    local r = tonumber(clr:sub(2,3), 16)
+    local g = tonumber(clr:sub(4,5), 16)
+    local b = tonumber(clr:sub(6,7), 16)
+    if r and g and b then
+        return {r,g,b}
+    end
+end
+
+local function avg_color(clr1, clr2)
+    local c1 = txt_color_to_rgb(clr1)
+    local c2 = txt_color_to_rgb(clr2)
+    if c1 and c2 then
+        return {0.5*(c1[1]+c2[1]), 0.5*(c1[2]+c2[2]), 0.5*(c1[3]+c2[3])}
+    end
+    return {0,0,0}
+end
+
+local function color_distance(c1, c2)
+    return math.abs(c1[1]-c2[1]) + math.abs(c1[2]-c2[2]) + math.abs(c1[3]-c2[3])
+end
+
+local function avg_color_distance(clr, t)
+    local diff_sum = 0
+    for i,v in ipairs(t) do
+        diff_sum = diff_sum + color_distance(clr, v)
+    end
+    return diff_sum / #t
+end
+
+local function min_color_distance(clr, t)
+    local min_dist = 0xff + 0xff + 0xff
+    for i,v in ipairs(t) do
+        local d = color_distance(clr, v)
+        if d < min_dist then
+            min_dist = d
+        end
+    end
+    return min_dist
+end
+
+local function set_armband_num(cfg)
+    -- automatic armband coloring:
+    -- This is a fallback mechanism, which is not perfect, because sleeves
+    -- can be of totally different color, but it's a "best effort" to color-match
+    if cfg.CaptainArmband == nil and cfg.Unk_Offset0x1C_Bits0to1 == nil then
+        if config.armband_color_match ~= 0 then
+            local clr = cfg.ShirtColor1 or cfg.UniColor_Color1
+            log("main shirt color: " .. tostring(clr))
+            clr = txt_color_to_rgb(clr)
+            local light = txt_color_to_rgb("#d0f080") -- yellow
+            local dark = txt_color_to_rgb("#232350")  -- dark blue
+            local armband_clr = (config.armband_light == 2) and dark or light
+            local armband_num
+            local dist_light = color_distance(clr, light)
+            local dist_dark = color_distance(clr, dark)
+            log("dist_light: " .. tostring(dist_light))
+            log("dist_dark: " .. tostring(dist_dark))
+            if dist_light > dist_dark then
+                -- set light armband
+                armband_num = (config.armband_light == 0) and 0 or 2
+            else
+                -- set dark armband
+                armband_num = (config.armband_light == 2) and 0 or 2
+            end
+            cfg.CaptainArmband = armband_num
+            cfg.Unk_Offset0x1C_Bits0to1 = armband_num
+            log("captain armband chosen: " .. tostring(armband_num))
+        end
+    end
+end
+
 local function update_kit_config(team_id, kit_ord, kit_path, cfg)
     -- insert _srm property, if not there
     -- (Standard configs do not have it, because the game
@@ -852,6 +927,7 @@ local function update_kit_config(team_id, kit_ord, kit_path, cfg)
     -- (only do that for files that actually exist in kitserver content)
     kit_ord = kit_ord or (kit_path == "p2" and 2 or 1)
     config_update_filenames(team_id, kit_ord, kit_path, cfg, ks_player_formats)
+    set_armband_num(cfg)
 end
 
 local function update_gk_kit_config(team_id, kit_ord, kit_path, cfg)
@@ -873,6 +949,7 @@ local function update_gk_kit_config(team_id, kit_ord, kit_path, cfg)
     -- (only do that for files that actually exist in kitserver content)
     kit_ord = kit_ord or 1
     config_update_filenames(team_id, kit_ord, kit_path, cfg, ks_gk_formats)
+    set_armband_num(cfg)
 end
 
 local function reset_match(ctx)
@@ -1105,48 +1182,6 @@ local function advance(curr_kit, num_kits)
     else
         return (curr_kit % num_kits) + 1
     end
-end
-
-local function txt_color_to_rgb(clr)
-    log(string.format("txt_color_to_rgb:: clr = %s", clr))
-    local r = tonumber(clr:sub(2,3), 16)
-    local g = tonumber(clr:sub(4,5), 16)
-    local b = tonumber(clr:sub(6,7), 16)
-    if r and g and b then
-        return {r,g,b}
-    end
-end
-
-local function avg_color(clr1, clr2)
-    local c1 = txt_color_to_rgb(clr1)
-    local c2 = txt_color_to_rgb(clr2)
-    if c1 and c2 then
-        return {0.5*(c1[1]+c2[1]), 0.5*(c1[2]+c2[2]), 0.5*(c1[3]+c2[3])}
-    end
-    return {0,0,0}
-end
-
-local function color_distance(c1, c2)
-    return math.abs(c1[1]-c2[1]) + math.abs(c1[2]-c2[2]) + math.abs(c1[3]-c2[3])
-end
-
-local function avg_color_distance(clr, t)
-    local diff_sum = 0
-    for i,v in ipairs(t) do
-        diff_sum = diff_sum + color_distance(clr, v)
-    end
-    return diff_sum / #t
-end
-
-local function min_color_distance(clr, t)
-    local min_dist = 0xff + 0xff + 0xff
-    for i,v in ipairs(t) do
-        local d = color_distance(clr, v)
-        if d < min_dist then
-            min_dist = d
-        end
-    end
-    return min_dist
 end
 
 local function choose_gk_kits(ctx)
