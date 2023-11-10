@@ -1,13 +1,13 @@
 -- kserv.lua
 -- Experimental kitserver with GDB
 -- written by juce and zlac
+-- tested by Hawke, Cesc Fabregas, mota10, MJTS-140914
 -- modification to support all PES 2021 collars by leoribas26
--- beta-tested by Hawke, Cesc Fabregas, mota10
--- requires: sider 6.2.0 or newer
+-- requires: sider 4.2.0 or newer
 
 local m = {}
 
-m.version = "1.13"
+m.version = "1.14"
 
 local kroot = ".\\content\\kit-server\\"
 local kmap
@@ -677,6 +677,7 @@ local function load_configs_for_team(ctx, team_id)
     local path = kmap[team_id]
 
     local comp_id = ctx.tournament_id and ctx.tournament_id or nil
+    comp_id = (ctx.game_mode ~= 0) and ctx.game_mode or comp_id  -- game_mode is: UCL=4, UEL=6, ACL=7
     local kit_group = compmap[comp_id]
     local kit_group_mi = compmap[string.format("%s:%s", comp_id, ctx.match_info)]
 
@@ -970,7 +971,7 @@ local function init_home_team_kits(ctx, team_id, skip_shirt_colors, init_config_
     if home_kits and #home_kits>0 then
         for i,ki in ipairs(home_kits) do
             local org_cfg = ctx.kits.get(team_id, i-1)
-            log(string.format("i=%d, org_cfg=%s", i, org_cfg))
+            log(string.format("HOME KIT: i=%d, org_cfg=%s", i, org_cfg))
             if org_cfg then -- check if we can go this far in list of kits
                 local cfg = table_copy(ki[2])
                 update_kit_config(team_id, i, ki[1], cfg)
@@ -1005,7 +1006,7 @@ local function init_away_team_kits(ctx, team_id)
     if away_kits and #away_kits>0 then
         for i,ki in ipairs(away_kits) do
             local org_cfg = ctx.kits.get(team_id, i-1)
-            log(string.format("i=%d, org_cfg=%s", i, org_cfg))
+            log(string.format("AWAY KIT: i=%d, org_cfg=%s", i, org_cfg))
             if org_cfg then -- check if we can go this far in list of kits
                 local cfg = table_copy(ki[2])
                 update_kit_config(team_id, i, ki[1], cfg)
@@ -1111,34 +1112,6 @@ end
 function m.get_filepath(ctx, filename, key)
     if key then
         return kroot .. key
-    end
-end
-
-function m.data_ready(ctx, filename, addr, len, total_size, offset)
-    if filename == "common\\etc\\pesdb\\Team.bin" then
-        log(string.format("addr: %s", addr))
-        local data = memory.read(addr, len)
-        data = zlib.unpack(data)
-        local p = 1
-        local q = #data
-        log(string.format("p:%s, q:%s", p, q))
-        while p < q do
-            --log(string.format("p now: %s", p))
-            local team_id = memory.unpack("i32", data:sub(p + 8, p + 11))
-            local licensed_flag = data:sub(p + 0x54, p + 0x54)
-            --log(string.format("team: %d, licensed_flag: %s", team_id, memory.hex(licensed_flag)))
-            if licensed_flag == "\x04" then
-                if kmap[team_id] then
-                    -- we have kits for this team, but the team is unlicensed.
-                    -- Drop the kits from GDB so that we don't run into bad scenarios
-                    -- such as erroneous kit color-matching and such
-                    log(string.format("Team %d is in the map, but it is unlicensed. Dropping from GDB", team_id))
-                    kmap[team_id] = nil
-                end
-            end
-            -- move on to next team
-            p = p + 0x5fc
-        end
     end
 end
 
@@ -1808,7 +1781,6 @@ function m.init(ctx)
     ctx.register("after_set_conditions", m.finalize_kits)
     ctx.register("livecpk_make_key", m.make_key)
     ctx.register("livecpk_get_filepath", m.get_filepath)
-    ctx.register("livecpk_data_ready", m.data_ready)
 
     grid_menu_rows, grid_menu_cols, grid_menu_pages = get_grid_menu_params()
 end
