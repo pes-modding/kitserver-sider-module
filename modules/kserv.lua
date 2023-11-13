@@ -1,8 +1,7 @@
--- kserv.lua
+-- kserv.lua for PES 2018
 -- Experimental kitserver with GDB
 -- written by juce and zlac
 -- tested by Hawke, Cesc Fabregas, mota10, MJTS-140914
--- modification to support all PES 2021 collars by leoribas26
 -- requires: sider 4.2.0 or newer
 
 local m = {}
@@ -12,8 +11,7 @@ m.version = "1.14"
 local kroot = ".\\content\\kit-server\\"
 local kmap
 local compmap
-local config
-local default_config = {
+local config = {
     auto_select_gk = 1,
     hide_comp_kits_badges = 0,
     armband_color_match = 1,
@@ -175,20 +173,20 @@ local SWITCH_MENU_PAGE = 0x33
 local overlay_curr = 1
 local overlay_page = 1
 local overlay_states = {
-    { ui = "Short sleeves model: %d", prop = "ShortSleevesModel", page = 1, col = 1, row = 1, decr = -1, incr = 1, min = 1, max = 2  },
+    { ui = "Short sleeves model: %d", prop = "ShortSleevesModel", page = 1, col = 1, row = 1, decr = -1, incr = 1, min = 1, max = 3  },
     { ui = "Shirt model: %s", prop = "ShirtModel", page = 1, col = 1, row = 2,
         vals = {"144", "151=Semi-long", "160", "176=Legacy"}, keys = {["144"] = 144, ["151=Semi-long"] = 151, ["160"] = 160, ["176=Legacy"] = 176},
         nextf = rot_left,
         prevf = rot_right,
     },
-    { ui = "Collar: %d", prop = "Collar", page = 1, col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 135  },
+    { ui = "Collar: %d", prop = "Collar", page = 1, col = 1, row = 3, decr = -1, incr = 1, min = 1, max = 119  },
     { ui = "Tight kit: %s", prop = "TightKit", page = 1, col = 1, row = 4,
         vals = {"Off", "On"}, keys = {["Off"] = 0, ["On"] = 1},
         nextf = rot_left,
         prevf = rot_right,
     },
     { ui = "Shirt pattern: %d", prop = "ShirtPattern", page = 1, col = 1, row = 5, decr = -1, incr = 1, min = 0, max = 6  },
-    { ui = "Winter collar: %d", prop = "WinterCollar", page = 1, col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 135  },
+    { ui = "Winter collar: %d", prop = "WinterCollar", page = 1, col = 1, row = 6, decr = -1, incr = 1, min = 1, max = 119  },
     { ui = "Long sleeves: %s", prop = "LongSleevesType", page = 1, col = 1, row = 7,
         vals = {"Normal&U-Shirt", "Only Undershirt"}, keys = {["Normal&U-Shirt"] = 62, ["Only Undershirt"] = 187},
         nextf = rot_left,
@@ -267,7 +265,7 @@ local overlay_states = {
     { ui = "UniColor Color2 (B): %s", prop = "UniColor_Color2", subprop = "B", subprop_type = "COLOR", page = 2, col = 4, row = 6, decr = -1, incr = 1, min = 0, max = 255  },
 
     { ui = "Unk_0x13_AllBits: %d", prop = "Unk_Offset0x13_AllBits", page = 3, col = 1, row = 1, def = 0, decr = -1, incr = 1, min = 0, max = 255  },
-    { ui = "Unk_0x1C_Bits0to1: %d", prop = "Unk_Offset0x1C_Bits0to1", page = 3, col = 1, row = 2, def = 0, decr = -1, incr = 1, min = 0, max = 3  },
+    { ui = "CaptainArmband: %d", prop = "CaptainArmband", page = 3, col = 1, row = 2, def = 0, decr = -1, incr = 1, min = 0, max = 3  },
     { ui = "Unk_0x23_Bits1to7: %d", prop = "Unk_Offset0x23_Bits1to7", page = 3, col = 1, row = 3, def = 0, decr = -1, incr = 1, min = 0, max = 127  },
     { ui = "Unk_0x24_Bits0to4: %d", prop = "Unk_Offset0x24_Bits0to4", page = 3, col = 1, row = 4, def = 0, decr = -1, incr = 1, min = 0, max = 31  },
     { ui = "Unk_0x25_Bits2to7: %d", prop = "Unk_Offset0x25_Bits2to7", page = 3, col = 2, row = 1, def = 0, decr = -1, incr = 1, min = 0, max = 63  },
@@ -538,6 +536,15 @@ local function load_config(filename)
         cfg_org[#cfg_org + 1] = { line, comment, key, value }
     end
     return cfg, cfg_org
+end
+
+local function update_kserv_config(cfg, filename)
+    local t = load_config(filename)
+    if t then
+        for k,v in pairs(t) do
+            cfg[k] = v
+        end
+    end
 end
 
 local function save_config(filename, cfg, cfg_org)
@@ -855,6 +862,15 @@ local function avg_color(clr1, clr2)
     return {0,0,0}
 end
 
+local function weighted_color(clr1, clr2)
+    local c1 = txt_color_to_rgb(clr1)
+    local c2 = txt_color_to_rgb(clr2)
+    if c1 and c2 then
+        return {0.7*c1[1]+0.3*c2[1], 0.7*c1[2]+0.3*c2[2], 0.7*c1[3]+0.3*c2[3]}
+    end
+    return {0,0,0}
+end
+
 local function color_distance(c1, c2)
     return math.abs(c1[1]-c2[1]) + math.abs(c1[2]-c2[2]) + math.abs(c1[3]-c2[3])
 end
@@ -882,19 +898,18 @@ local function set_armband_num(cfg)
     -- automatic armband coloring:
     -- This is a fallback mechanism, which is not perfect, because sleeves
     -- can be of totally different color, but it's a "best effort" to color-match
-    if cfg.CaptainArmband == nil and cfg.Unk_Offset0x1C_Bits0to1 == nil then
+    if cfg.CaptainArmband == nil then
         if config.armband_color_match ~= 0 then
             local clr = cfg.ShirtColor1 or cfg.UniColor_Color1
             log("main shirt color: " .. tostring(clr))
             clr = txt_color_to_rgb(clr)
             local light = txt_color_to_rgb("#d0f080") -- yellow
             local dark = txt_color_to_rgb("#232350")  -- dark blue
-            local armband_clr = (config.armband_light == 2) and dark or light
-            local armband_num
             local dist_light = color_distance(clr, light)
             local dist_dark = color_distance(clr, dark)
             log("dist_light: " .. tostring(dist_light))
             log("dist_dark: " .. tostring(dist_dark))
+            local armband_num
             if dist_light > dist_dark then
                 -- set light armband
                 armband_num = (config.armband_light == 0) and 0 or 2
@@ -903,7 +918,7 @@ local function set_armband_num(cfg)
                 armband_num = (config.armband_light == 2) and 0 or 2
             end
             cfg.CaptainArmband = armband_num
-            cfg.Unk_Offset0x1C_Bits0to1 = armband_num
+            log("config.armband_light: " .. tostring(config.armband_light))
             log("captain armband chosen: " .. tostring(armband_num))
         end
     end
@@ -1160,10 +1175,10 @@ end
 local function choose_gk_kits(ctx)
     local hkid = ctx.kits.get_current_kit_id(0)
     local p_home = ctx.kits.get(ctx.home_team, hkid)
-    local clr1 = avg_color(p_home.ShirtColor1, p_home.ShirtColor2)
+    local clr1 = weighted_color(p_home.ShirtColor1, p_home.ShirtColor2)
     local akid = ctx.kits.get_current_kit_id(1)
     local p_away = ctx.kits.get(ctx.away_team, akid)
-    local clr2 = avg_color(p_away.ShirtColor1, p_away.ShirtColor2)
+    local clr2 = weighted_color(p_away.ShirtColor1, p_away.ShirtColor2)
 
     -- start with 1st GK kit for each team
     local gk_home = home_next_gk_kit
@@ -1228,7 +1243,7 @@ local function choose_gk_kits(ctx)
         local scores = {}
         for i,v in ipairs(home_gk_kits) do
             if not hgk_filtered or hgk_indices[i] then
-                local clr = avg_color(v[2].ShirtColor1, v[2].ShirtColor2)
+                local clr = weighted_color(v[2].ShirtColor1, v[2].ShirtColor2)
                 scores[#scores + 1] = {i, min_color_distance(clr, colors_to_compare), clr}
                 log(string.format("home gk kit: %s (%s), min_color_distance: %s", scores[#scores][1], v[1], scores[#scores][2]))
             end
@@ -1245,7 +1260,7 @@ local function choose_gk_kits(ctx)
         local clr3 = gk_home
         for i,v in ipairs(away_gk_kits) do
             if not agk_filtered or agk_indices[i] then
-                local clr = avg_color(v[2].ShirtColor1, v[2].ShirtColor2)
+                local clr = weighted_color(v[2].ShirtColor1, v[2].ShirtColor2)
                 scores[#scores + 1] = {i, min_color_distance(clr, colors_to_compare)}
                 log(string.format("away gk kit: %s (%s), min_color_distance: %s", scores[#scores][1], v[1], scores[#scores][2]))
             end
@@ -1758,7 +1773,7 @@ function m.init(ctx)
     end
     if not ctx.kits then
         log("Your sider does not have support for kit manipulation")
-        log("Upgrade to Sider 6.2.0 or later")
+        log("Upgrade to Sider 4.2.0 or later")
         return
     end
     local dummy = kroot .. "dummy.bin"
@@ -1768,7 +1783,7 @@ function m.init(ctx)
         f:close()
         log(string.format("created helper file: %s", dummy))
     end
-    config = load_config(kroot .. "config.txt") or default_config
+    update_kserv_config(config, kroot .. "config.txt")
     log(string.format("config: %s", t2s(config)))
     kmap = load_map(kroot .. "\\map.txt")
     compmap = load_compmap(kroot .. "\\map_comp.txt")
